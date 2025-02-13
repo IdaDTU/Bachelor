@@ -12,17 +12,30 @@ directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/Arctic_data'
 combined_nc=combine_nc_files(directory)  
 
 # Create subset of dataset
-ds_subset = combined_nc.isel(time=1,            # select the first time step
-                             nj=slice(700, 1100),  # select the first 100 indices in the nj dimension
-                             ni=slice(700, 1100))  # select the first 100 indices in the ni dimension
+ds_subset = combined_nc.isel(time=23,            # select time step
+                             nj=slice(0, 1490),  # 1490 is the max lenght of the nj dimension
+                             ni=slice(0, 1115))  # 1115 is the max lenght of the ni dimension
 
 # Create dataframe
 input_df = create_input_dataframe(ds_subset)
-print(input_df)
 
+# Extract and define relevant variabels 
+thickness_ice = input_df['hi']                   # in m
+thickness_snow = input_df['hs']                  # in m
+temperature_air = input_df['tair']               # in K
+temperature_water = input_df['sst']              # in K
+temperature_ice = input_df['tinz']               # in K
+
+#%%
+print(temperature_air.describe())
+
+
+#%% Plot SST
 plot_measurements(lat=input_df['TLAT'], 
                   lon=input_df['TLON'],
-                  cvalue=input_df['hi'])
+                  colorbar_min = 240,
+                  colorbar_max = 275,
+                  cvalue=input_df['tair'])
 
 
 #%% SMRT outputs
@@ -46,12 +59,6 @@ CIMR_output_df_snowpack = init_sensor_snowpack(sensor='CIMR',
 #%% Loop over each row in the DataFrame
 import numpy as np
 
-thickness_ice = input_df['hi']
-thickness_snow = input_df['hs']
-temperature_air = input_df['tair'] + 273.15
-temperature_water = input_df['sst'] + 273.15
-temperature_ice = input_df['tinz']+ 273.15
-n = 5
 
 # Store all temperature profiles
 temperature_profiles = []
