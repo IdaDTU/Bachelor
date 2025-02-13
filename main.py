@@ -2,23 +2,28 @@
 # Imports
 from init_sensor_make_model import init_sensor_snowpack, init_sensor_icecolumn
 from create_input_df import combine_nc_files,create_input_dataframe
+from thermal_gradients import compute_thermal_gradients
+from measurement_visulazations import plot_measurements
 
 # Insert .nc data directory
 directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/Arctic_data' 
 
 # Combine all .nc files in directory into one
-combined_nc=combine_nc_files(directory) 
+combined_nc=combine_nc_files(directory)  
 
-# Convert to df
-input_df=create_input_dataframe(combined_nc) 
+# Create subset of dataset
+ds_subset = combined_nc.isel(time=1,            # select the first time step
+                             nj=slice(700, 1100),  # select the first 100 indices in the nj dimension
+                             ni=slice(700, 1100))  # select the first 100 indices in the ni dimension
 
-
-#%%
-
+# Create dataframe
+input_df = create_input_dataframe(ds_subset)
 print(input_df)
 
+plot_measurements(lat=input_df['TLAT'], 
+                  lon=input_df['TLON'],
+                  cvalue=input_df['hi'])
 
-#%% Plot orbit
 
 #%% SMRT outputs
 MWI_output_df_snowpack = init_sensor_snowpack(sensor='MWI',
@@ -38,36 +43,88 @@ CIMR_output_df_snowpack = init_sensor_snowpack(sensor='CIMR',
 #print(MWI_df)
 
 
+#%% Loop over each row in the DataFrame
+import numpy as np
+
+thickness_ice = input_df['hi']
+thickness_snow = input_df['hs']
+temperature_air = input_df['tair'] + 273.15
+temperature_water = input_df['sst'] + 273.15
+temperature_ice = input_df['tinz']+ 273.15
+n = 5
+
+# Store all temperature profiles
+temperature_profiles = []
+
+# Compute temperature profile for each point
+for i in range(len(input_df)):
+    depths = np.linspace(0, thickness_ice.iloc[i] + thickness_snow.iloc[i], n) 
+    temperatures = compute_thermal_gradients(
+        temperature_air.iloc[i], 
+        temperature_water.iloc[i], 
+        thickness_ice.iloc[i], 
+        thickness_snow.iloc[i], 
+        depths) 
+   
+    temperature_profiles.append(temperatures)  # Store the list
+
+
+corr_length = 1.0e-3
+salinity = 7.88-1.59 * thickness_ice
+porosity = salinity * (0.05322 - 4.919/temperature_ice) # ice porosity in fractions, [0..1]
+
+#%% Storage for results
+
+
+
+test = init_sensor_icecolumn(sensor='CIMR',
+                          ice_type='multiyear',
+                          thickness_ice= [thickness_ice.iloc[1]],
+                          temperature=temperature_profiles[1],
+                          microstructure_model='exponential',
+                          corr_length=corr_length,
+                          brine_inclusion_shape='spheres',
+                          salinity=salinity.iloc[1],
+                          porosity=porosity.iloc[1],
+                          density = 2,
+                          add_water_substrate='ocean')
+print(test)
+
 
 
 #%%
-# local import
-from smrt import make_ice_column, make_snowpack, make_model, sensor_list
-from smrt import PSU
-import numpy as np
-#from smrt.inputs.make_medium import make_ice_column
+TBice = []
 
-# prepare inputs
-l = 9 #9 ice layers
-thickness = np.array([1.5/l] * l) #ice is 1.5m thick
-corr_length=np.array([1.0e-3] * (l))
-temperature = np.linspace(273.15-20., 273.15 - 1.8, l) #temperature gradient in the ice from -20 deg C at top to freezing temperature of water at bottom (-1.8 deg C)
-salinity = np.linspace(2., 10., l)*PSU #salinity profile ranging from salinity=2 at the top to salinity=10 at the bottom of the ice
+for i in range(len(input_df)):
+    result = init_sensor_icecolumn(sensor='CIMR',
+                          ice_type='firstyear',
+                          thickness_ice=[thickness_ice.iloc[i]],
+                          temperature=temperature_profiles[i],
+                          microstructure_model='exponential',
+                          corr_length=1.0e-3,
+                          brine_inclusion_shape='spheres',
+                          salinity=(salinity).iloc[i],      #from permille to ppt
+                          brine_volume_fraction=0.0,   #page 101
+                          brine_volume_model=None,
+                          brine_permittivity_model=None,
+                          ice_permittivity_model=None, 
+                          saline_ice_permittivity_model=None,
+                          porosity=porosity.iloc[i], 
+                          density=None, 
+                          add_water_substrate=True,
+                          surface=None, 
+                          interface=None,
+                          substrate=None,
+                          atmosphere=None
+                          )
+    TBice.append(result)
+    
+print(TBice)
 
-# create a multi-year sea ice column with assumption of spherical brine inclusions (brine_inclusion_shape="spheres"), and 10% porosity:
-ice_type = 'multiyear' # first-year or multi-year sea ice
-porosity = 0.08 # ice porosity in fractions, [0..1]
 
-test = init_sensor_icecolumn(sensor='CIMR',
-                            ice_type=ice_type,
-                            thickness=thickness,
-                            temperature=temperature,
-                            microstructure_model="exponential",
-                            brine_inclusion_shape="spheres", #brine_inclusion_shape can be "spheres", "random_needles" or "mix_spheres_needles"
-                            salinity=salinity, #either 'salinity' or 'brine_volume_fraction' should be given for sea ice; if salinity is given, brine volume fraction is calculated in the model; if none is given, ice is treated as fresh water ice 
-                            porosity = porosity, # either density or 'porosity' should be set for sea ice. If porosity is given, density is calculated in the model. If none is given, ice is treated as having a porosity of 0% (no air inclusions)
-                            corr_length=corr_length,
-                            add_water_substrate="ocean" #see comment below
-                            )
 
-print(test)
+
+
+
+
+
