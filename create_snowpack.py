@@ -1,10 +1,12 @@
-from smrt import make_snowpack, make_ice_column, make_model, sensor_list
+from smrt import make_snowpack
+import numpy as np
+from thermal_gradients import compute_thermal_gradients
 
-def create_snowpack(thickness,
-                    density,
-                    substrate,                    
-                    temperature,
-                    medium):
+def create_snowpack(number_of_layers,
+                    thickness_ice,
+                    thickness_snow,
+                    temperature_air,
+                    temperature_water):
     """
     Function to create a snowpack using SMART's make_snowpack function.
     
@@ -25,13 +27,43 @@ def create_snowpack(thickness,
     Returns:
         object: The snowpack object created with the provided specifications.
     """
-    return make_snowpack(thickness=thickness,
-                         corr_length=np.repeat(5.0e-5 * thickness_snow.values.reshape(-1, 1), n, axis=1),
-                         microstructure_model='exponential',
-                         density=density,
-                         substrate=substrate,
-                         temperature=temperature,
-                         salinity=0,
-                         medium=medium)
+    
+    n = number_of_layers
+    hi = np.array([thickness_ice/n] * n).T 
+    hs = np.array([thickness_snow/n] * n).T
+    
+    #density = np.full_like(thickness_snow, 300, dtype=float)
+    
+    # Store all temperature profiles
+    #temperature_profiles = []
 
+    # Compute temperature profile for each point
+    #for i in range(len(thickness_snow)):
+     #   depths = np.linspace(0, hs[i], n, dtype=np.float64)  # Define depth array
+      #  temperatures = compute_thermal_gradients(
+       #     temperature_air.iloc[i], 
+        #    temperature_water.iloc[i], 
+         #   hi[i], 
+          #  hs[i],
+           # depths
+        #)
+        #temperature_profiles.append(temperatures)  # Store the list
+
+    # Convert temperature_profiles into a numpy array (600, 5)
+   # temperature_profiles = np.array(temperature_profiles)
+    
+    thickness_snow = np.array([0.05, 0.2])
+    temperature_s = np.linspace(273.15-25., 273.15 - 20, n)
+    density_s = [200, 340]
+    
+    
+    return make_snowpack(thickness=thickness_snow,
+                         corr_length=np.array([5e-5]*n),
+                         microstructure_model='exponential',
+                         density=density_s,
+                         temperature=temperature_s,
+                         salinity=0,
+                         medium='snow',
+                         inclusion_shape = 'spheres',
+                         emmodel_options={'inclusion_shape': 'spheres'})
 
