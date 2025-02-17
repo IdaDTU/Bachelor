@@ -1,6 +1,7 @@
-from smrt import make_snowpack, make_ice_column
+from smrt import make_ice_column
 from thermal_gradients import compute_thermal_gradients
 import numpy as np
+from smrt import PSU
 
 
 def create_icecolumn(ice_type,
@@ -39,38 +40,52 @@ def create_icecolumn(ice_type,
     """
     
     n = number_of_layers
-    hi = np.array([thickness_ice/n] * n).T 
+    #hi = np.array([thickness_ice/n] * n).T 
+    hi = np.array([3/n] * n).T 
     hs = np.array([thickness_snow/n] * n).T
     
     # Store all temperature profiles
-    temperature_profiles = []
+    #temperature_profiles = []
 
     # Compute temperature profile for each point
-    for i in range(len(thickness_ice)):
-        depths = np.linspace(0, hi.iloc[i], n, dtype=np.float64)  # Define depth array
-        temperatures = compute_thermal_gradients(
-            temperature_air.iloc[i], 
-            temperature_water.iloc[i], 
-            hi.iloc[i], 
-            hs.iloc[i],
-            depths
-        )
-        temperature_profiles.append(temperatures)  # Store the list
+    #for i in range(len(thickness_ice)):
+     #   depths = np.linspace(0, hi[i], n, dtype=np.float64)  # Define depth array
+      #  temperatures = compute_thermal_gradients(
+       #     temperature_air.iloc[i], 
+        #    temperature_water.iloc[i], 
+         #   hi[i], 
+          #  hs[i],
+           # depths
+        #)
+        
+        #temperature_profiles.append(temperatures)  # Store the list
 
     # Convert temperature_profiles into a numpy array (600, 5)
-    temperature_profiles = np.array(temperature_profiles)
+    #temperature_profiles = np.array(temperature_profiles)
     
+    temperature_profiles = np.linspace(273.15-20., 273.15 - 1.8, n)
+    #temperature_profiles = np.tile(temperature_profiles, (len(thickness_ice), 1))
     
-    salinity = np.repeat(7.88 - 1.59 * hi.values.reshape(-1, 1), n, axis=1)
-    porosity = salinity * (0.05322 - 4.919 / temperature_ice.values.reshape(-1, 1)) 
+    #salinity = np.array(7.88 - 1.59 * hi)
+    salinity = np.linspace(2., 10., n)*PSU
+    #porosity = salinity * (0.05322 - 4.919 / temperature_ice.to_numpy().reshape(-1, 1)) 
+    #porosity = salinity * 0.05322 - 4.919 / 260
+    porosity = 0.0
     
-    return make_ice_column(ice_type=ice_type,
-                           thickness=thickness_ice,
-                           temperature=temperature_profiles,
-                           microstructure_model='exponential',
-                           corr_length=np.repeat(1.0e-3 * thickness_ice.values.reshape(-1, 1), n, axis=1),
-                           brine_inclusion_shape='sphere',
-                           salinity=salinity,
-                           brine_volume_fraction=0.0,
-                           porosity=porosity,
-                           add_water_substrate=True)
+    icelayer = make_ice_column(
+                            ice_type=ice_type,
+                            thickness=hi,
+                            temperature=temperature_profiles,
+                            microstructure_model='exponential',
+                            corr_length=np.array([1.0e-3] * n),
+                            brine_inclusion_shape='spheres',  
+                            salinity=salinity,
+                            brine_volume_fraction=0.0,
+                            porosity=porosity,
+                            add_water_substrate=True,
+                            medium='ice'
+                            #emmodel_options={'inclusion_shape': 'spheres'}
+                            )
+
+
+    return icelayer
