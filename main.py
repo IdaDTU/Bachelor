@@ -2,12 +2,12 @@
 # Imports
 #from init_sensor_make_model import init_sensor_snowpack, init_sensor_icecolumn
 from data_preparation import combine_nc_files,create_input_dataframe, remove_outliers
-from measurement_visualizations import plot_measurements
+from data_visualization import plot_measurements
 #from translator import CICE_to_SMRT
 
 # Insert .nc data directory
-#directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/test' # Ida directory 
-directory = '/Users/josephine/Library/CloudStorage/OneDrive-DanmarksTekniskeUniversitet/Bachelorprojekt/DMI_data' # Josephine directory
+directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/test' # Ida directory 
+# directory = '/Users/josephine/Library/CloudStorage/OneDrive-DanmarksTekniskeUniversitet/Bachelorprojekt/DMI_data' # Josephine directory
 
 # Combine all .nc files in directory into one
 combined_nc=combine_nc_files(directory)  
@@ -21,114 +21,98 @@ print('subset created...')
 input_df = create_input_dataframe(ds_subset)
 print('input_df created...')
 
-input_df_filtered = remove_outliers(input_df)
+# Remove outliers dataframe
+filtered_df = remove_outliers(input_df)
 print('outliers removed from input_df...')
-print('amount of outliers:',len(input_df) - len(input_df_filtered))
 
 # Extract and define relevant variabels 
-thickness_ice = input_df_filtered['hi'] # in m
-thickness_snow = input_df_filtered['hs'] # in m
-temperature_profile_ice = input_df_filtered['temperature_profiles'] # in K
-temperature_snow = input_df_filtered['tsnz'] # in K
-salinity_profile_ice = input_df_filtered['salinity_profiles'] # in kg/kg
+thickness_ice = filtered_df['hi'] # in m
+thickness_snow = filtered_df['hs'] # in m
+temperature_profile_ice = filtered_df['temperature_profiles'] # in K
+temperature_snow = filtered_df['tsnz'] # in K
+salinity_profile_ice = filtered_df['salinity_profiles'] # in kg/kg
+#%%
 
+print(temperature_profile_ice.
 
 #%% Translate variables from CICE to SMRT
-import numpy as np
+from SMRT import SMRT_create_ice_columns, SMRT_create_snowpacks,SMRT_create_mediums,SMRT_create_sensor,SMRT_calculate_brightness_temperature
 from smrt import make_ice_column, make_snowpack, make_model, sensor_list
-from smrt import PSU
 
-# Prepare a list to hold each ice column.
-ice_columns = []
-# Loop over each index to create the ice columns.
-for i in range(2):
-    l = 7  # 7 ice layers
+# pick how much data to run
+n = 100
+ice_columns = SMRT_create_ice_columns(thickness_ice,
+                                      temperature_profile_ice,
+                                      salinity_profile_ice,
+                                      n)
 
-    # Distribute the total ice thickness evenly across the layers.
-    thickness = np.array([thickness_ice.iloc[i] / l] * l)
-    
-    # Define the correlation length for each layer.
-    p_ex = np.array([1.0e-3] * l)
-    
-    # Extract the temperature profile (a gradient) for the current iteration.
-    temperature = temperature_profile_ice.iloc[i]
-    
-    # Extract the salinity profile and apply the PSU conversion.
-    salinity = salinity_profile_ice.iloc[i] 
-    
-    # Define additional properties for the ice column.
-    ice_type = 'multiyear'  # Options: 'first-year' or 'multiyear'
-    porosity = 0.08        # Ice porosity (fraction between 0 and 1)
-    
-    # Create the ice column using the provided parameters.
-    ice_column = make_ice_column(
-        ice_type=ice_type,
-        thickness=thickness,
-        temperature=temperature,
-        microstructure_model="exponential",
-        brine_inclusion_shape="spheres",  # Options: "spheres", "random_needles", or "mix_spheres_needles"
-        salinity=salinity,  # If salinity is provided, the model calculates the brine volume fraction.
-        porosity=porosity,  # If porosity is provided, the model calculates the density.
-        corr_length=p_ex,
-        add_water_substrate="ocean"  # Adds a water substrate beneath the ice column.
-    )
-    
-    # Store the created ice column.
-    ice_columns.append(ice_column)
+snowpacks = SMRT_create_snowpacks(thickness_snow,
+                                  temperature_snow,
+                                  n)
+
+mediums = SMRT_create_mediums(snowpacks,
+                              ice_columns,
+                              n)
+
+
 #%%
-# create snowpack with 1 snow layers:
-# Prepare a list to hold each snowpack.
-snowpacks = []
-for i in range(2):    
-    l_s=1 #1 snow layers
-    thickness_s = np.array([thickness_snow.iloc[i]])
-    p_ex_s = np.array([2e-5]*l_s)
-    temperature_s = temperature_snow.iloc[i]
-    density_s = [300]
-    
-    # create the snowpack
-    snowpack = make_snowpack(thickness=thickness_s,
-                             microstructure_model="exponential",
-                             density=density_s,
-                             temperature=temperature_s,
-                             corr_length=p_ex_s)
 
-    # Store the created snowpack.
-    snowpacks.append(snowpack)
+ # Define CIMR sensor with specified frequencies, incidence angle, and polarizations
+CIMR = sensor_list.passive(frequency = [1.4e9, 6.9e9, 10.65e9, 18.7e9, 36.5e9],  # Frequencies in Hz
+                           theta = 55,  # Incidence angle in degrees
+                           polarization = ['V', 'H'],  # Vertical and Horizontal polarization
+                           channel_map=['1.4', '6.9', '10.65', '18.7', '37'],  # Frequency labels in GHz
+                           name ='CIMR')  # Sensor name
 
-#%%   
-#add snowpack on top of ice column:
-mediums=[]
-for i in range(2):
-    medium = snowpacks[i] + ice_columns[i]
-    mediums.append(medium)
-print(mediums)    
+# Define MWI sensor with its frequencies, incidence angle, and polarizations
+MWI = sensor_list.passive([18.7e9, 23.8e9, 31.4e9, 50.3e9, 52.7e9, 53.24e9, 53.75e9, 89e9], 
+                          53.1,  # Incidence angle in degrees
+                          ['V', 'H'],  # Vertical and Horizontal polarization
+                          [18.7, 23.8, 31.4, 50.3, 52.7, 53.24, 53.75, 89],  # Frequency labels in GHz
+                          'MWI')  # Sensor name
+
+# Access the 1.4 GHz channel using indexing:
 
 #%% create the sensor
-for i in range(2):
-    sensor = sensor_list.passive(1.6e9, 55.)
-    
+
+for i in range(n):
+    sensor =  sensor_list.passive(1.4e9,55)
     n_max_stream = 128 #TB calculation is more accurate if number of streams is increased (currently: default = 32);
     #needs to be increased when using > 1 snow layer on top of sea ice! 
-    m = make_model("iba", "dort", rtsolver_options ={"n_max_stream": n_max_stream})
+    m = make_model("iba", "dort", rtsolver_options=dict(error_handling='nan', 
+                                                        diagonalization_method='shur_forcedtriu', 
+                                                        phase_normalization=True, 
+                                                        n_max_stream=128))
     
     # run the model for bare sea ice:
-    res1 = m.run(sensor, ice_columns[i])
+    #res1 = m.run(CIMR, ice_columns[i])
     # run the model for snow-covered sea ice:
-    res2 = m.run(sensor, mediums[i])
-    
-    # print TBs at horizontal and vertical polarization:
-    print(res1.TbH(), res1.TbV())
+    res2 = m.run(sensor, mediums[i]) 
     print(res2.TbH(), res2.TbV())
+    
+    # df = {
+    #      'Channel': ['1.4GHz', '6.9GHz', '10.65GHz', '18.7GHz', '37GHz'],
+    #      'TB(V)': res2.TbV(),  # Brightness Temperature for Vertical polarization
+    #      'TB(H)': res2.TbH(),
+    #      'PR':res2.polarization_ratio()  # Polarization Ratio
+    #  }
+    
+    # df = pd.DataFrame(df)
+    # # print TBs at horizontal and vertical polarization:
+    # #print(res1.TbH(), res1.TbV())
+    #print(df)   
+
+
 
 #%% 
 
 # Plot SST
-plot_measurements(lat=input_df_filtered['TLAT'], 
-                  lon=input_df_filtered['TLON'],
-                  colorbar_min = 0,
-                  colorbar_max = 3,
-                  colorbar_label = 'Ice Thickness [m]',
-                  title = 'Ice Thickness in the Artic Region',
-                  color = 'Blues_r',
-                  cvalue=input_df_filtered['hi'])
+plot_measurements(lat=input_df['TLAT'], 
+                  lon=input_df['TLON'],
+                  colorbar_min = 240,
+                  colorbar_max = 275,
+                  cvalue=input_df['tair'])
+
+
+
+
