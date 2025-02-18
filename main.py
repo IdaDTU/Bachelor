@@ -1,13 +1,13 @@
 
 # Imports
 #from init_sensor_make_model import init_sensor_snowpack, init_sensor_icecolumn
-from data_preparation import combine_nc_files,create_input_dataframe
-from data_visualization import plot_measurements
+from data_preparation import combine_nc_files,create_input_dataframe, remove_outliers
+from measurement_visualizations import plot_measurements
 #from translator import CICE_to_SMRT
 
 # Insert .nc data directory
-directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/test' # Ida directory 
-# directory = '/Users/josephine/Library/CloudStorage/OneDrive-DanmarksTekniskeUniversitet/Bachelorprojekt/DMI_data' # Josephine directory
+#directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/test' # Ida directory 
+directory = '/Users/josephine/Library/CloudStorage/OneDrive-DanmarksTekniskeUniversitet/Bachelorprojekt/DMI_data' # Josephine directory
 
 # Combine all .nc files in directory into one
 combined_nc=combine_nc_files(directory)  
@@ -21,12 +21,16 @@ print('subset created...')
 input_df = create_input_dataframe(ds_subset)
 print('input_df created...')
 
+input_df_filtered = remove_outliers(input_df)
+print('outliers removed from input_df...')
+print('amount of outliers:',len(input_df) - len(input_df_filtered))
+
 # Extract and define relevant variabels 
-thickness_ice = input_df['hi'] # in m
-thickness_snow = input_df['hs'] # in m
-temperature_profile_ice = input_df['temperature_profiles'] # in K
-temperature_snow = input_df['tsnz'] # in K
-salinity_profile_ice = input_df['salinity_profiles'] # in kg/kg
+thickness_ice = input_df_filtered['hi'] # in m
+thickness_snow = input_df_filtered['hs'] # in m
+temperature_profile_ice = input_df_filtered['temperature_profiles'] # in K
+temperature_snow = input_df_filtered['tsnz'] # in K
+salinity_profile_ice = input_df_filtered['salinity_profiles'] # in kg/kg
 
 
 #%% Translate variables from CICE to SMRT
@@ -92,8 +96,6 @@ for i in range(2):
     # Store the created snowpack.
     snowpacks.append(snowpack)
 
-
-
 #%%   
 #add snowpack on top of ice column:
 mediums=[]
@@ -118,21 +120,15 @@ for i in range(2):
     # print TBs at horizontal and vertical polarization:
     print(res1.TbH(), res1.TbV())
     print(res2.TbH(), res2.TbV())
-    
-
-
-
-
 
 #%% 
 
 # Plot SST
-plot_measurements(lat=input_df['TLAT'], 
-                  lon=input_df['TLON'],
-                  colorbar_min = 240,
-                  colorbar_max = 275,
-                  cvalue=input_df['tair'])
-
-
-
-
+plot_measurements(lat=input_df_filtered['TLAT'], 
+                  lon=input_df_filtered['TLON'],
+                  colorbar_min = 0,
+                  colorbar_max = 3,
+                  colorbar_label = 'Ice Thickness [m]',
+                  title = 'Ice Thickness in the Artic Region',
+                  color = 'Blues_r',
+                  cvalue=input_df_filtered['hi'])
