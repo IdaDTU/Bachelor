@@ -1,6 +1,7 @@
 import os
 import glob
 import xarray as xr
+import numpy as np
 
 def combine_nc_files(directory):
     """
@@ -43,13 +44,14 @@ def create_input_dataframe(ds):
     """
     
     # Select only the desired variables from the dataset.
-    ds = ds[['TLAT', 'TLON', 'hi', 'hs', 'Sinz', 'Tinz']]
+    ds = ds[['TLAT', 'TLON', 'hi', 'hs', 'Sinz', 'Tinz','Tsnz']]
     
     # Convert the dataset to a DataFrame and reset the index so that all coordinates become columns.
     df = ds.to_dataframe().reset_index()
     
-    # Convert Tinz from °C to K and Sinz from ppt to kg/kg.
+    # Convert Tinz and Tsnz from °C to K and Sinz from ppt to kg/kg.
     df['tinz'] = df['Tinz'] + 273.15
+    df['tsnz'] = df['Tsnz'] + 273.15
     df['sinz'] = df['Sinz'] / 1000
     
     # Filter rows: Keep only rows where TLAT is within the Arctic Circle.
@@ -57,11 +59,11 @@ def create_input_dataframe(ds):
     
     # Drop NaN
     df = df.dropna()
+        
+    # Group by the measurement-defining columns, including 'nc'
+    group_cols = ['TLAT', 'TLON', 'hi', 'hs','tsnz', 'nc']
     
-    # Group by the measurement-defining columns (which should remain the same for all nkice levels)
-    group_cols = ['TLAT', 'TLON', 'hi', 'hs']
-    
-    # Aggregate the temperature values along 'nkice' into a list.
+    # First aggregate as lists
     profiles_df = (
         df.groupby(group_cols)
           .agg({
@@ -74,6 +76,10 @@ def create_input_dataframe(ds):
               'sinz': 'salinity_profiles'
           })
     )
+    
+    # Now convert the list values into NumPy arrays
+    profiles_df['temperature_profiles'] = profiles_df['temperature_profiles'].apply(np.array)
+    profiles_df['salinity_profiles'] = profiles_df['salinity_profiles'].apply(np.array)
 
     return profiles_df
     
