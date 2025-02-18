@@ -82,6 +82,41 @@ def create_input_dataframe(ds):
     profiles_df['salinity_profiles'] = profiles_df['salinity_profiles'].apply(np.array)
 
     return profiles_df
+
+
+def remove_outliers(df):
+    """
+    Remove outliers using the Interquartile Range (IQR) method.
+
+    Parameters:
+        df (pd.DataFrame): Input DataFrame.
+
+    Returns:
+        pd.DataFrame: DataFrame with outliers removed.
+    """
+   
+    # Identify numeric columns that are not list-like
+    numeric_columns = [col for col in df.columns if df[col].dtype != 'O' and not isinstance(df[col].iloc[0], np.ndarray)]
+    
+    # Create a filtered copy of the DataFrame
+    df_filtered = df.copy()
+    
+    for col in numeric_columns:
+        Q1 = df_filtered[col].quantile(0.25)  # First quartile
+        Q3 = df_filtered[col].quantile(0.75)  # Third quartile
+        IQR = Q3 - Q1  # Interquartile range
+
+        # Define lower and upper bounds
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+
+        # Apply filtering progressively
+        df_filtered = df_filtered[(df_filtered[col] >= lower_bound) & (df_filtered[col] <= upper_bound)]
+
+    return df_filtered
+
+
+
     
     
     
