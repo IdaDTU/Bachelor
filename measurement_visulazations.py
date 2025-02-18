@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import numpy as np
 
-def plot_measurements(lat, lon, cvalue=None):
+def plot_measurements(lat, lon, colorbar_min, colorbar_max, colorbar_label, title, color, cvalue=None):
     # Create figure and axis
     fig, ax = plt.subplots(figsize=(10, 4))
     
@@ -12,7 +12,8 @@ def plot_measurements(lat, lon, cvalue=None):
                 boundinglat=66.5,   # Only show latitudes north of 66.5° N
                 lon_0=0,   # Central meridian; adjust as needed
                 resolution='l',
-                ax=ax)
+                ax=ax,
+                round = True)
 
 
     # Draw map features
@@ -21,22 +22,24 @@ def plot_measurements(lat, lon, cvalue=None):
     m.drawmeridians(np.arange(-180, 180, 30), labels=[True, False, False, True])
     
     # Fill land and ocean
-    #m.fillcontinents(color='lightgray', lake_color='lightblue')
+    m.fillcontinents(color='darkgrey', lake_color='lightblue')
     #m.drawmapboundary(fill_color='lightblue'
-    m.bluemarble()
+
     
     # Convert lat/lon to map coordinates
     x, y = m(lon, lat)
+    
+    
 
     # Scatter plot
     if cvalue is not None:
-        sc = ax.scatter(x, y, c=cvalue, cmap='viridis', s=10, alpha=0.8)
-        plt.colorbar(sc, ax=ax, orientation='vertical', label='Measurement Value')
+        sc = ax.scatter(x, y, c=cvalue, cmap=color, s=10, alpha=0.8, vmin = colorbar_min, vmax = colorbar_max)
+        plt.colorbar(sc, ax=ax, orientation='vertical', label=colorbar_label)
     else:
-        ax.scatter(x, y, color='red', edgecolors='k', s=10, alpha=0.8)  # Default single color
+        ax.scatter(x, y, color='red', edgecolors='k', s=10, alpha=0.8, vmin = colorbar_min, vmax = colorbar_max)  # Default single color
 
     # Set title
-    ax.set_title("Arctic Region Measurements", fontsize=14)
+    ax.set_title(title, fontsize=14)
 
     # Show the plot
     plt.show()
