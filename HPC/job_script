@@ -1,0 +1,23 @@
+# LSBATCH: User input
+#BSUB -J arctic_data
+#BSUB -o arctic_data%J.out
+#BSUB -e arctic_data%J.err
+#BSUB -q hpc
+#BSUB -n 4
+#BSUB -R "rusage[mem=16G]"
+#BSUB -R "span[hosts=1]"
+#BSUB -W 24:00
+### -- send notification at start --
+#BSUB -B
+### -- send notification at completion--
+#BSUB -N
+# end of BSUB options------------------------------
+
+# Load Python 3.9.21 module
+module load python3
+
+# Install required packages to user space
+python3 -m pip install --user xarray numpy pandas matplotlib basemap smrt dask
+
+# Execute the Python application
+python3 /zhome/da/d/187040/code/main.py
