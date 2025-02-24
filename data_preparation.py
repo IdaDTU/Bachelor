@@ -2,6 +2,7 @@ import os
 import glob
 import xarray as xr
 import numpy as np
+import pandas as pd
 
 def combine_nc_files(directory):
     """
@@ -33,8 +34,7 @@ def create_input_dataframe(ds):
     spatial coordinates) will become columns in the DataFrame.
     
     Rows where TLAT is below the Arctic Circle (i.e., TLAT < 66.5°) are dropped.
-    Optionally, you can also filter by TLON if required.
-    
+
     Parameters:
         ds (xarray.Dataset): The dataset containing multiple variables.
     
@@ -84,41 +84,58 @@ def create_input_dataframe(ds):
     return profiles_df
 
 
-def remove_outliers(df):
-    """
-    Remove outliers using the Interquartile Range (IQR) method.
-
-    Parameters:
-        df (pd.DataFrame): Input DataFrame.
-
-    Returns:
-        pd.DataFrame: DataFrame with outliers removed.
-    """
-   
-    # Identify numeric columns that are not list-like
-    numeric_columns = [col for col in df.columns if df[col].dtype != 'O' and not isinstance(df[col].iloc[0], np.ndarray)]
+#%%
+def remove_nonphysical(df):
+    # Drop rows where 'tsnz' exceeds 273.15K.
+    df = df[df['tsnz'] <= 273.15]
     
-    # Create a filtered copy of the DataFrame
-    df_filtered = df.copy()
+    # Initialize a set to store indices of rows to drop
+    dropped_rows = set()
+
+    # Check temperature_profiles: drop row if any of the first 7 elements is > 273.15
+    for i in range(len(df['temperature_profiles'])):
+        for j in range(7):
+            if df['temperature_profiles'].iloc[i][j] > 273.15:
+                dropped_rows.add(df.index[i])
+                break  # Once a violation is found, exit inner loop
     
-    for col in numeric_columns:
-        Q1 = df_filtered[col].quantile(0.25)  # First quartile
-        Q3 = df_filtered[col].quantile(0.75)  # Third quartile
-        IQR = Q3 - Q1  # Interquartile range
+    # Check salinity_profiles: drop row if any of the first 7 elements is < 2
+    for i in range(len(df['salinity_profiles'])):
+        for j in range(7):
+            if df['salinity_profiles'].iloc[i][j] < 0.002: 
+                dropped_rows.add(df.index[i])
+                break  # Exit inner loop on violation
+    
+    # Drop the identified rows from the DataFrame
+    df = df.drop(list(dropped_rows))
 
-        # Define lower and upper bounds
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
-
-        # Apply filtering progressively
-        df_filtered = df_filtered[(df_filtered[col] >= lower_bound) & (df_filtered[col] <= upper_bound)]
-
-    return df_filtered
-
-
+    return df
 
     
     
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+
