@@ -1,9 +1,12 @@
 
 # Imports
 #from init_sensor_make_model import init_sensor_snowpack, init_sensor_icecolumn
-from data_preparation import combine_nc_files,create_input_dataframe, remove_nonphysical
+from data_preparation import combine_nc_files, create_input_dataframe, remove_nonphysical, temperature_gradient_snow
 from data_visualization import plot_measurements
 import pandas as pd
+from SMRT import SMRT_create_ice_columns, SMRT_create_snowpacks,SMRT_create_mediums,SMRT_create_sensor#,SMRT_calculate_brightness_temperature
+from smrt import make_ice_column, make_snowpack, make_model, sensor_list
+
 
 # Insert .nc data directory
 directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/test' # Ida directory 
@@ -17,68 +20,53 @@ print('combined_nc created...')
 ds_subset = combined_nc.isel(time = 0)  # select time step
 print('subset created...')
 
-# Create dataframe
-input_df = create_input_dataframe(ds_subset)
+# Selcect amount of ice layers and snow layers
+layers_ice = 2
+layers_snow = 3
+
+# Create dataframe and select amount of ice layers
+input_df = create_input_dataframe(ds_subset, layers_ice)
 print('input_df created...')
 
-#%% Remove outliers dataframe
-filtered_df = remove_nonphysical(input_df)
+# Remove unphysical data from dataframe
+filtered_df = remove_nonphysical(input_df, layers_ice)
 print(f'outliers removed from input_df: {len(input_df)-len(filtered_df)} ...')
 
-# Extract and define relevant variabels 
+# Extract and define relevant scalar variabels 
 thickness_ice = filtered_df['hi'] # in m
 thickness_snow = filtered_df['hs'] # in m
-temperature_profile_ice = filtered_df['temperature_profiles'] # in K
-temperature_snow = filtered_df['tsnz'] # in K
+temperature_air = filtered_df['tair'] # in m
+print('variables extracted...')
+
+# Extract ice profiles
 salinity_profile_ice = filtered_df['salinity_profiles'] # in kg/kg
+temperature_profile_ice = filtered_df['temperature_profiles'] # in K
 
-#%% Calculate porosity using Frankenstein and Garner [1967]
-
-# porosity = salinity_profile_ice[1000]*(0.05322-4.919/temperature_profile_ice[1000])
-# print(porosity) # okay de er ret lave....
-
-print(salinity_profile_ice)
-
-print(temperature_profile_ice)
-
-#%% Translate variables from CICE to SMRT
-from SMRT import SMRT_create_ice_columns, SMRT_create_snowpacks,SMRT_create_mediums,SMRT_create_sensor#,SMRT_calculate_brightness_temperature
-from smrt import make_ice_column, make_snowpack, make_model, sensor_list
+# Calculate snow temperature profile
+temperature_profile_snow = temperature_gradient_snow(thickness_snow,
+                                                     thickness_ice,
+                                                     temperature_air,
+                                                     layers_snow)
+print('profiles extracted and computed...')
 
 # pick how much data to run
+# n = len(filtered_df)
 n = 10
 
-#%%
 ice_columns = SMRT_create_ice_columns(thickness_ice,
                                       temperature_profile_ice,
                                       salinity_profile_ice,
-                                      n)
-
+                                      n,
+                                      layers_ice)
+#
 snowpacks = SMRT_create_snowpacks(thickness_snow,
-                                  temperature_snow,
-                                  n)
+                                  temperature_profile_snow,
+                                  n,
+                                  layers_snow)
 
 mediums = SMRT_create_mediums(snowpacks,
                               ice_columns,
                               n)
-
-
- # Define CIMR sensor with specified frequencies, incidence angle, and polarizations
-CIMR = sensor_list.passive(frequency = [1.4e9, 6.9e9, 10.65e9, 18.7e9, 36.5e9],  # Frequencies in Hz
-                           theta = 55,  # Incidence angle in degrees
-                           polarization = ['V', 'H'],  # Vertical and Horizontal polarization
-                           channel_map=['1.4', '6.9', '10.65', '18.7', '37'],  # Frequency labels in GHz
-                           name ='CIMR')  # Sensor name
-
-# Define MWI sensor with its frequencies, incidence angle, and polarizations
-MWI = sensor_list.passive([18.7e9, 23.8e9, 31.4e9, 50.3e9, 52.7e9, 53.24e9, 53.75e9, 89e9], 
-                          53.1,  # Incidence angle in degrees
-                          ['V', 'H'],  # Vertical and Horizontal polarization
-                          [18.7, 23.8, 31.4, 50.3, 52.7, 53.24, 53.75, 89],  # Frequency labels in GHz
-                          'MWI')  # Sensor name
-
-
-#%% create the sensor
 
 results = []
 
@@ -106,13 +94,9 @@ for i, medium in enumerate(mediums):
 # Create a DataFrame to store the results.
 tbV = pd.DataFrame({'tbv': results})
 
-
-#%% 
 # Plot tb
 plot_measurements(lat=filtered_df['TLAT'][:n], 
                   lon=filtered_df['TLON'][:n],
-                  colorbar_min = 240,
-                  colorbar_max = 275,
                   cvalue=[tbV])
 
 

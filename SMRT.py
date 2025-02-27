@@ -5,12 +5,13 @@ from smrt import make_ice_column, make_snowpack, make_model, sensor_list
 def SMRT_create_ice_columns(thickness_ice,
                 temperature_profile_ice,
                 salinity_profile_ice,
-                n):
+                n,
+                layers_ice):
     
     ice_columns = []
     # Loop over each index to create the ice columns.
     for i in range(n):
-        l = 7  # 7 ice layers
+        l = layers_ice  #  ice layers
         print(f"Processing ice_columns index {i}. Finished: {(i/n)}...")
         # Distribute the total ice thickness evenly across the layers.
         thickness = np.array([thickness_ice.iloc[i] / l] * l)
@@ -46,16 +47,17 @@ def SMRT_create_ice_columns(thickness_ice,
     return ice_columns
 
 def SMRT_create_snowpacks(thickness_snow,
-                          temperature_snow,
-                          n):
+                          temperature_profile_snow,
+                          n,
+                          layers_snow):
     snowpacks = []
     for i in range(n):    
-        l_s=1 #1 snow layers
+        l_s=layers_snow #3 snow layers
         print(f"Processing snowpacks index: {i}. Finished: {(i/n)}...")
-        thickness_s = np.array([thickness_snow.iloc[i]])
-        p_ex_s = np.array([2e-5]*l_s) # chnage to 0.15mm
-        temperature_s = temperature_snow.iloc[i]
-        density_s = [300]
+        thickness_s = np.linspace(0, thickness_snow.iloc[i], l_s)
+        p_ex_s = np.array([1.5e-4]*l_s) 
+        temperature_s = temperature_profile_snow.iloc[i]
+        density_s = [200,300, 340]
         
         # create the snowpack
         snowpack = make_snowpack(thickness=thickness_s,

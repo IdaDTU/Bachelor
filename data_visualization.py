@@ -4,9 +4,7 @@ import numpy as np
 
 def plot_measurements(lat,
                       lon, 
-                      colorbar_min, 
-                      colorbar_max,
-                      cvalue=None):
+                      cvalue):
     # Create figure and axis
     fig, ax = plt.subplots(figsize=(10, 4))
     
@@ -34,15 +32,13 @@ def plot_measurements(lat,
     x, y = m(lon, lat)
 
     # Scatter plot
-    if cvalue is not None:
-        sc = ax.scatter(x, y, c=cvalue, cmap='coolwarm', s=60, alpha=0.8, vmin = colorbar_min, vmax = colorbar_max)
-        plt.colorbar(sc, ax=ax, orientation='vertical', label='Measurement Value')
-    else:
-        ax.scatter(x, y, color='red', edgecolors='k', s=10, alpha=0.8, vmin = colorbar_min, vmax = colorbar_max)  # Default single color
-
+    sc = ax.scatter(x, y, c=cvalue, cmap='coolwarm', s=100, alpha=0.8)
+    plt.colorbar(sc, ax=ax, orientation='vertical', label='Measurement Value')
+    
     # Set title
     ax.set_title("Arctic Circle", fontsize=14)
-
-    # Show the plot
-    plt.show()
+    
+    # Save before showing
     plt.savefig('plot.pdf')
+   
+
