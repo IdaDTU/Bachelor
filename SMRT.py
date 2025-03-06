@@ -56,7 +56,7 @@ def SMRT_create_snowpacks(thickness_snow,
         l_s=layers_snow #3 snow layers
         print(f"Processing snowpacks index: {i}. Finished: {(i/n)}...")
         thickness_s = np.linspace(0, thickness_snow.iloc[i], l_s)
-        p_ex_s = np.array([1.5e-4]*l_s) 
+        p_ex_s = np.linspace(0.000054, 0.000442, l_s) 
         temperature_s = temperature_profile_snow.iloc[i]
         
         density_s = denisty_profile_snow.iloc[i]
