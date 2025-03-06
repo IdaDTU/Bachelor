@@ -6,6 +6,7 @@ def SMRT_create_ice_columns(thickness_ice,
                 temperature_profile_ice,
                 salinity_profile_ice,
                 n,
+                ice_type,
                 layers_ice):
     
     ice_columns = []
@@ -26,7 +27,6 @@ def SMRT_create_ice_columns(thickness_ice,
         salinity = salinity_profile_ice.iloc[i] 
         
         # Define additional properties for the ice column.
-        ice_type = 'multiyear'  # Options: 'first-year' or 'multiyear'
         porosity = 0.08       # Ice porosity (fraction between 0 and 1)
         
         # Create the ice column using the provided parameters.
@@ -48,6 +48,7 @@ def SMRT_create_ice_columns(thickness_ice,
 
 def SMRT_create_snowpacks(thickness_snow,
                           temperature_profile_snow,
+                          denisty_profile_snow,
                           n,
                           layers_snow):
     snowpacks = []
@@ -57,7 +58,8 @@ def SMRT_create_snowpacks(thickness_snow,
         thickness_s = np.linspace(0, thickness_snow.iloc[i], l_s)
         p_ex_s = np.array([1.5e-4]*l_s) 
         temperature_s = temperature_profile_snow.iloc[i]
-        density_s = [200,300, 340]
+        
+        density_s = denisty_profile_snow.iloc[i]
         
         # create the snowpack
         snowpack = make_snowpack(thickness=thickness_s,
@@ -107,4 +109,39 @@ def SMRT_create_sensor(name):
     else:
         print('Invalid sensor name')
         return None
+
+def SMRT_compute_tbv(mediums, freq, theta):
+    """
+    Computes the brightness temperature in vertical polarization for a given list of mediums.
+    
+    Parameters:
+    - mediums: list of medium objects to process
+    - freq: Frequency in Hz (e.g., 37e9 for 37 GHz)
+    - theta: Incidence angle in degrees
+    
+    Returns:
+    - DataFrame with computed brightness temperatures (tbv).
+    """
+    results = []
+
+    for i, medium in enumerate(mediums):
+        print(f"Processing index: {i}")
+        
+        # Create the sensor object for the given frequency and incidence angle.
+        sensor = sensor_list.passive(freq, theta)
+        
+        # Increase the number of streams for a more accurate TB calculation
+        n_max_stream = 128  # Default is 32; increase if using > 1 snow layer on top of sea ice.
+        m = make_model("iba", "dort", rtsolver_options={"n_max_stream": n_max_stream})
+        
+        # Run the model for snow-covered sea ice:
+        res = m.run(sensor, medium)
+        
+        # Compute the brightness temperature in vertical polarization.
+        tbh = res.TbH()
+        results.append(tbh)
+
+    # Create a DataFrame to store the results.
+    tbH_df = pd.DataFrame({'tbh': results})
+    return tbH_df
 

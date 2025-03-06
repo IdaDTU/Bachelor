@@ -1,12 +1,11 @@
 
 # Imports
 #from init_sensor_make_model import init_sensor_snowpack, init_sensor_icecolumn
-from data_preparation import combine_nc_files, create_input_dataframe, remove_nonphysical, temperature_gradient_snow
+from data_preparation import combine_nc_files, create_input_dataframe, remove_nonphysical
 from data_visualization import plot_measurements
-import pandas as pd
-from SMRT import SMRT_create_ice_columns, SMRT_create_snowpacks,SMRT_create_mediums,SMRT_create_sensor#,SMRT_calculate_brightness_temperature
+from physics import temperature_gradient_snow, calculate_snow_density
+from SMRT import SMRT_create_ice_columns, SMRT_create_snowpacks,SMRT_create_mediums,SMRT_create_sensor, SMRT_compute_tbv
 from smrt import make_ice_column, make_snowpack, make_model, sensor_list
-
 
 # Insert .nc data directory
 directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/test' # Ida directory 
@@ -20,9 +19,9 @@ print('combined_nc created...')
 ds_subset = combined_nc.isel(time = 0)  # select time step
 print('subset created...')
 
-# Selcect amount of ice layers and snow layers
-layers_ice = 2
-layers_snow = 3
+# Create ice layers and snow layers
+layers_ice = 2 # select amount of ice layers
+layers_snow = 3 # select amount of snow layers
 
 # Create dataframe and select amount of ice layers
 input_df = create_input_dataframe(ds_subset, layers_ice)
@@ -42,62 +41,51 @@ print('variables extracted...')
 salinity_profile_ice = filtered_df['salinity_profiles'] # in kg/kg
 temperature_profile_ice = filtered_df['temperature_profiles'] # in K
 
-# Calculate snow temperature profile
+# Calculate snow temperature and density profiles
 temperature_profile_snow = temperature_gradient_snow(thickness_snow,
                                                      thickness_ice,
                                                      temperature_air,
                                                      layers_snow)
+
+denisty_profile_snow = calculate_snow_density(thickness_snow,
+                                      temperature_profile_snow,
+                                      layers_snow)
+
 print('profiles extracted and computed...')
 
-# pick how much data to run
+# Pick how much data to run
 # n = len(filtered_df)
 n = 10
 
+# Choose type of ice to simulate
+ice_type = 'multiyear'
+
+# Create ice_columns and snowpacks
 ice_columns = SMRT_create_ice_columns(thickness_ice,
                                       temperature_profile_ice,
                                       salinity_profile_ice,
                                       n,
+                                      ice_type,
                                       layers_ice)
-#
+
 snowpacks = SMRT_create_snowpacks(thickness_snow,
                                   temperature_profile_snow,
+                                  denisty_profile_snow,
                                   n,
                                   layers_snow)
 
+# Combine into mediums
 mediums = SMRT_create_mediums(snowpacks,
                               ice_columns,
                               n)
 
-results = []
-
-for i, medium in enumerate(mediums):
-    # Process only every 500th iteration
-    #if i % 400 != 0:
-    #    continue
-
-    print(f"Processing index: {i}")
-    
-    # Create the sensor object for a given frequency and incidence angle.
-    sensor = sensor_list.passive(1.4e9, 55.0)
-    
-    # Increase the number of streams for a more accurate TB calculation
-    n_max_stream = 128  # Default is 32; increase if using > 1 snow layer on top of sea ice.
-    m = make_model("iba", "dort", rtsolver_options={"n_max_stream": n_max_stream})
-    
-    # Run the model for snow-covered sea ice:
-    res = m.run(sensor, medium)
-    
-    # Compute the brightness temperature in vertical polarization.
-    tbv = res.TbV()
-    results.append(tbv)
-
-# Create a DataFrame to store the results.
-tbV = pd.DataFrame({'tbv': results})
+# Compute brightness temperatures
+tbH_df = SMRT_compute_tbv(mediums, 37e9, 55.0)
 
 # Plot tb
 plot_measurements(lat=filtered_df['TLAT'][:n], 
                   lon=filtered_df['TLON'][:n],
-                  cvalue=[tbV])
+                  cvalue=tbH_df['tbh'])
 
 
 
