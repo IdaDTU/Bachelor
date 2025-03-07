@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import numpy as np
+from scipy.stats import linregress
 
 def plot_measurements(lat, lon, colorbar_min, colorbar_max, colorbar_label, title, color, cvalue=None):
     # Create figure and axis
@@ -57,5 +58,25 @@ def plot_measurements(lat, lon, colorbar_min, colorbar_max, colorbar_label, titl
     #plt.savefig("/zhome/57/6/168999/Desktop/plot.png", dpi=300, bbox_inches="tight") #jose hpc path
     #plt.savefig("/zhome/da/d/187040/plot.pdf", dpi=300, bbox_inches="tight") #ida hpc path
     plt.show() # used for Spyder
+
+def plot_sensitivity(n, variable, tbv, title, xlabel, ylabel, labels):
+    plt.figure()
+    
+    for i in range(len(tbv)):
+        tbv_i = tbv[i].values.ravel()
+        print(f"variable[:n]: shape={variable[:n].shape}")
+        print(f"tbv[i]: shape={tbv[i].shape}")
+        #plt.scatter(variable[:n], tbv[i], label=labels[i])
+        slope, intercept, r_value, p_value, std_err = linregress(variable[:n], tbv_i)
+        plt.plot(variable[:n], slope * variable[:n] + intercept, label='f{labels[i]}: y={slope:.2f}x + {intercept:.2f}')
+        
+        
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend()
+    
+    plt.savefig("/zhome/57/6/168999/Desktop/plots/sensitivity_plot.png", dpi=300, bbox_inches="tight")
+    #plt.show()
     
 
