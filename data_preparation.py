@@ -42,7 +42,7 @@ def create_input_dataframe(ds, layers_ice):
     """
     
     # Select relevant variables
-    ds = ds[['TLAT', 'TLON', 'hi', 'hs', 'Sinz', 'Tinz', 'Tsnz', 'Tair', 'iage', 'aicen', 'nc']]
+    ds = ds[['TLAT', 'TLON', 'hi', 'hs', 'Sinz', 'Tinz', 'Tsnz', 'Tair', 'snow', 'nc']]
     
     # Convert to DataFrame
     df = ds.to_dataframe().reset_index()
@@ -61,7 +61,7 @@ def create_input_dataframe(ds, layers_ice):
     df = df[df['TLAT'] >= 67]
 
     # Grouping columns (excluding nc + aicen because they vary across layers)
-    group_cols = ['TLAT', 'TLON', 'hi', 'hs', 'tsnz', 'tair', 'iage']
+    group_cols = ['TLAT', 'TLON', 'hi', 'hs', 'tsnz', 'tair', 'snow']
 
     ### Step 1: Select the row with the max 'aicen' (as the representative row)
     idx_max_aicen = df.groupby(group_cols)['aicen'].idxmax()
