@@ -75,7 +75,8 @@ def plot_sensitivity(n, variable, tbv, title, xlabel, ylabel, labels, name):
     plt.ylabel(ylabel)
     plt.title(title)
     plt.legend()
-    
+
+    #plt.savefig("/zhome/da/d/187040/plot.pdf", dpi=300, bbox_inches="tight") #ida hpc path
     plt.savefig("/zhome/57/6/168999/Desktop/plots/sensitivity_plot_{name}.png", dpi=300, bbox_inches="tight")
     #plt.show()
     
