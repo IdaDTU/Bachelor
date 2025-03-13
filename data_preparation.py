@@ -27,75 +27,73 @@ def combine_nc_files(directory):
     combined_ds = xr.open_mfdataset(nc_files, combine='by_coords')
     return combined_ds
 
-def create_input_dataframe(ds,
-                           layers_ice):
-    """
-    Create a Pandas DataFrame from all variables in the dataset
-    without applying any manual indexing. All dimensions (e.g., time,
-    spatial coordinates) will become columns in the DataFrame.
-    
-    Rows where TLAT is below the Arctic Circle (i.e., TLAT < 66.5°) are dropped.
 
+def create_input_dataframe(ds, layers_ice):
+    """
+    Create a DataFrame with temperature and salinity profiles.
+    Selects the rows with the maximum 'aicen' per group, but collects tinz/sinz profiles from all rows.
+    
     Parameters:
-        ds (xarray.Dataset): The dataset containing multiple variables.
+        ds (xarray.Dataset): Dataset with sea ice variables.
+        layers_ice (int): Number of layers to include in the profiles.
     
     Returns:
-        pd.DataFrame: A DataFrame with all variables and coordinate labels,
-                      with rows corresponding to every combination of coordinates.
+        pd.DataFrame: One row per group with profiles + features.
     """
     
-    # Select only the desired variables from the dataset.
-    ds = ds[['TLAT', 'TLON', 'hi', 'hs', 'Sinz', 'Tinz','Tsnz','Tair']]
+    # Select relevant variables
+    ds = ds[['TLAT', 'TLON', 'hi', 'hs', 'Sinz', 'Tinz', 'Tsnz', 'Tair', 'iage', 'aicen', 'nc']]
     
-    # Convert the dataset to a DataFrame and reset the index so that all coordinates become columns.
+    # Convert to DataFrame
     df = ds.to_dataframe().reset_index()
-    
-    # Convert Tinz, Tair and Tsnz from °C to K and Sinz from ppt to kg/kg.
+
+    # Convert units
     df['tinz'] = df['Tinz'] + 273.15
     df['tsnz'] = df['Tsnz'] + 273.15
     df['tair'] = df['Tair'] + 273.15
     df['sinz'] = df['Sinz'] / 1000
-    
-    # Drop orginal columns
-    df = df.drop(columns=['Tinz', 'Tsnz', 'Tair', 'Sinz'])
 
-    
-    # Filter rows: Keep only rows where TLAT is within the Arctic Circle.
-    df = df[df['TLAT'] >= 67]
-    
-    # Drop NaN
+    # Drop originals
+    df.drop(columns=['Tinz', 'Tsnz', 'Tair', 'Sinz'], inplace=True)
+
+    # Clean data
     df = df.dropna()
-        
-    # Group by the measurement-defining columns, including 'nc'
-    group_cols = ['TLAT', 'TLON', 'hi', 'hs','tsnz','tair','nc']
-    
-    # First aggregate as lists, only containing 3 layers
-    profiles_df = (
+    df = df[df['TLAT'] >= 67]
+
+    # Grouping columns (excluding nc + aicen because they vary across layers)
+    group_cols = ['TLAT', 'TLON', 'hi', 'hs', 'tsnz', 'tair', 'iage']
+
+    ### Step 1: Select the row with the max 'aicen' (as the representative row)
+    idx_max_aicen = df.groupby(group_cols)['aicen'].idxmax()
+    df_max_aicen = df.loc[idx_max_aicen].reset_index(drop=True)
+
+    ### Step 2: Collect tinz and sinz into profiles (lists of values per group)
+    profiles = (
         df.groupby(group_cols)
           .agg({
-              'tinz': lambda x: list(x),
-              'sinz': lambda x: list(x)
+              'tinz': lambda x: list(x)[:layers_ice],  # Collect up to n layers
+              'sinz': lambda x: list(x)[:layers_ice]
           })
           .reset_index()
-          .rename(columns={
-              'tinz': 'temperature_profiles',
-              'sinz': 'salinity_profiles'
-          })
     )
-    
-    # Now convert the list values into NumPy arrays
-    profiles_df['temperature_profiles'] = profiles_df['temperature_profiles'].apply(np.array)
-    profiles_df['salinity_profiles'] = profiles_df['salinity_profiles'].apply(np.array)
+
+    # Step 3: Merge the max aicen info with the profiles
+    merged_df = pd.merge(df_max_aicen, profiles, on=group_cols, suffixes=('', '_profile'))
+
+    # Step 4: Rename for clarity (optional)
+    merged_df = merged_df.rename(columns={
+        'tinz_profile': 'temperature_profiles',
+        'sinz_profile': 'salinity_profiles'
+    })
+
+    # Convert lists to numpy arrays
+    merged_df['temperature_profiles'] = merged_df['temperature_profiles'].apply(np.array)
+    merged_df['salinity_profiles'] = merged_df['salinity_profiles'].apply(np.array)
+
+    return merged_df
 
 
-    # Acces n layers from top (first three values in each row)
-    profiles_df['temperature_profiles'] = profiles_df['temperature_profiles'].apply(lambda x: x[:layers_ice])
-    profiles_df['salinity_profiles'] = profiles_df['salinity_profiles'].apply(lambda x: x[:layers_ice])
-            
-    return profiles_df
 
-
-#
 def remove_nonphysical(df,
                        layers_ice):
     # Drop rows where 'tsnz' exceeds 273.15K.
@@ -122,44 +120,3 @@ def remove_nonphysical(df,
     df = df.drop(list(dropped_rows))
 
     return df
-
-
-
-def temperature_gradient_snow(thickness_snow, 
-                             thickness_ice, 
-                             temperature_air,
-                             layers_snow):
-    """
-    Calculate the temperature profile within the snow layer for each set of inputs.
-
-    Parameters:
-        thickness_snow (pd.Series): Series of snow layer thicknesses in meters.
-        thickness_ice (pd.Series): Series of ice layer thicknesses in meters.
-        temperature_air (pd.Series): Series of air temperatures in Kelvin.
-        layers (int): Number of layers to divide the snow thickness into.
-
-    Returns:
-        pd.Series: Series where each element is a NumPy array of temperatures.
-    """
-    # Constants
-    ksi = 2.1  # Ice thermal conductivity (W/m/K)
-    ks = 0.3   # Snow thermal conductivity (W/m/K)
-    temperature_water = 271.15  # Water temperature (K)
-    
-    # Compute the temperature at the ice-snow interface for each row
-    interface_temp = (ksi * thickness_snow * temperature_water + ks * thickness_ice * temperature_air) / (ksi * thickness_snow + ks * thickness_ice)
-    
-    # Calculate the thermal gradient in the snow for each row
-    gradient = (interface_temp - temperature_air) / thickness_snow
-
-    # Generate snow layer temperatures for each row
-    profiles = []
-    for i in range(len(thickness_snow)):
-        depths = np.linspace(0, thickness_snow.iloc[i], layers_snow)  # Evenly spaced depth levels
-        profile = temperature_air.iloc[i] + gradient.iloc[i] * depths  # Temperature at each layer depth
-        profiles.append(profile)  # Append the NumPy array directly
-    
-    # Create a Series with snow temperature profiles
-    profile_series = pd.Series(profiles)
-
-    return profile_series
