@@ -35,6 +35,7 @@ print(f'outliers removed from input_df: {len(input_df)-len(filtered_df)} ...')
 thickness_ice = filtered_df['hi'] # in m
 thickness_snow = filtered_df['hs'] # in m
 temperature_air = filtered_df['tair'] # in m
+accu = filtered_df['snow']
 print('variables extracted...')
 
 # Extract ice profiles
