@@ -3,7 +3,7 @@
 #from init_sensor_make_model import init_sensor_snowpack, init_sensor_icecolumn
 from data_preparation import combine_nc_files, create_input_dataframe, remove_nonphysical
 from data_visualization import plot_measurements
-from physics import temperature_gradient_snow, calculate_snow_density
+from physics import temperature_gradient_snow, calculate_snow_density, firn_densification
 from SMRT import SMRT_create_ice_columns, SMRT_create_snowpacks,SMRT_create_mediums,SMRT_create_sensor, SMRT_compute_tbv
 from smrt import make_ice_column, make_snowpack, make_model, sensor_list
 
