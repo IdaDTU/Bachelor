@@ -77,6 +77,48 @@ def calculate_snow_density(thickness_snow, layers_snow):
     return pd.Series(densities_snow) 
 
 
+def firn_densification(accumulation_rate, thickness_snow, rho_0, snow_layers):
+    """
+    Calculate the firn density profile as a function of snow layers.
+
+    Parameters:
+    - accumulation_rate: Array of annual snow accumulation rates (m water equivalent)
+    - thickness_snow: Array of snow thickness values (m)
+    - rho_0: Initial snow density at the surface (Mg/m^3)
+    - snow_layers: Number of snow layers (each layer represents 1 year)
+
+    Returns:
+    - depths: Array of depths (m)
+    - densities: Array of densities (Mg/m^3)
+    """
+    
+    # Constants
+    rho_i = 0.917  # Density of ice in Mg/m^3
+    
+    # Stage 1 constants
+    a = 1.1  # from the article, empirical constant for Stage 1
+    b = 0.5  # from the article, empirical constant for Stage 2
+
+    # Initialize arrays for depths and densities
+    depths = thickness_snow
+    densities = np.zeros_like(depths)
+
+    # Stage 1: Densification for rho < 0.55 Mg/m^3
+    for i in range(snow_layers):
+        # Densification based on the current accumulation rate and snow thickness
+        if rho_0 + a * accumulation_rate[i] * depths[i] < 0.55:
+            densities[i] = rho_0 + a * accumulation_rate[i] * depths[i]
+        else:
+            # Transition to Stage 2 densification
+            stage1_end_depth = (0.55 - rho_0) / (a * accumulation_rate[i])
+            if depths[i] < stage1_end_depth:
+                densities[i] = rho_0 + a * accumulation_rate[i] * depths[i]
+            else:
+                densities[i] = 0.55 + b * accumulation_rate[i]**0.5 * (depths[i] - stage1_end_depth)
+
+    return densities*1000
+
+
 
 
 
