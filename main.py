@@ -92,6 +92,18 @@ plot_measurements(lat=filtered_df['TLAT'][:n],
                   color = 'coolwarm',
                   cvalue=tbH_df['tbh'])
 
+#%% sensitivity
+tbv = [tbH1, tbH2, tbH3, tbH4, tbH5]
+labels = ['1.4 Ghz', '6.9 GHz', '10.65 GHz', '18.7 GHz', '36.5 GHz']
+
+plot_sensitivity(n=n, 
+                 variable=thickness_ice, 
+                 tbv=tbv, 
+                 title='Ice Thickness Sensitivity Study', 
+                 xlabel='Ice Thickness [m]', 
+                 ylabel='Brightness Temperature [K]', 
+                 labels=labels)
+
 
 
 
