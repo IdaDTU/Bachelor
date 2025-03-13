@@ -77,10 +77,10 @@ def calculate_snow_density(thickness_snow, layers_snow):
     return pd.Series(densities_snow) 
 
 
-def firn_densification(accumulation_rate, thickness_snow, rho_0, snow_layers):
+def firn_densification2(accumulation_rate, thickness_snow, rho_0, snow_layers):
     """
     Calculate the firn density profile as a function of snow layers.
-    Returns a pandas Series with snow_layers columns and len(thickness_snow) rows.
+    Returns a pandas Series with len(thickness_snow) rows where each element is an array of densities for the snow layers.
 
     Parameters:
     - accumulation_rate: Array of annual snow accumulation rates (m water equivalent)
@@ -89,40 +89,41 @@ def firn_densification(accumulation_rate, thickness_snow, rho_0, snow_layers):
     - snow_layers: Number of snow layers (each layer represents 1 year)
 
     Returns:
-    - pd.Series: A series with snow_layers columns and len(thickness_snow) rows
+    - pd.Series: A series with len(thickness_snow) rows, where each row contains an array of densities for the snow layers
     """
     
     # Stage 1 constants
     a = 1.1  # from the article, empirical constant for Stage 1
     b = 0.5  # from the article, empirical constant for Stage 2
 
-    # Initialize array for densities
-    densities = np.zeros((len(thickness_snow), snow_layers))  # Array to store densities for each snow layer
+    # Initialize list to store densification profiles (as arrays)
+    density_profiles = []
 
     # Stage 1: Densification for rho < 0.55 Mg/m^3
     for i in range(len(thickness_snow)):  # Iterate over each snow profile (row)
         depths = np.linspace(0, thickness_snow.iloc[i], snow_layers)  # Create depth values for each layer
+        densities = np.zeros(snow_layers)  # Initialize densities for this snow profile
+        
         for j in range(snow_layers):  # Iterate over each snow layer
             # Densification based on the current accumulation rate and snow thickness
             if rho_0 + a * accumulation_rate.iloc[j] * depths[j] < 0.55:
-                densities[i, j] = rho_0 + a * accumulation_rate.iloc[j] * depths[j]
+                densities[j] = rho_0 + a * accumulation_rate.iloc[j] * depths[j]
             else:
                 # Transition to Stage 2 densification
                 stage1_end_depth = (0.55 - rho_0) / (a * accumulation_rate.iloc[j])
                 if depths[j] < stage1_end_depth:
-                    densities[i, j] = rho_0 + a * accumulation_rate.iloc[j] * depths[j]
+                    densities[j] = rho_0 + a * accumulation_rate.iloc[j] * depths[j]
                 else:
-                    densities[i, j] = 0.55 + b * accumulation_rate.iloc[j]**0.5 * (depths[j] - stage1_end_depth)
+                    densities[j] = 0.55 + b * accumulation_rate.iloc[j]**0.5 * (depths[j] - stage1_end_depth)
 
-    # Convert densities to kg/m^3 (from Mg/m^3)
-    densities *= 1000
+        # Convert densities to kg/m^3 (from Mg/m^3)
+        densities *= 1000
+        
+        # Append the resulting density profile for this row
+        density_profiles.append(densities)
 
-    # Create a pandas DataFrame with snow_layers columns and len(thickness_snow) rows
-    density_df = pd.DataFrame(densities, columns=[f'Layer_{i+1}' for i in range(snow_layers)])
-
-    # Return as pd.Series
-    return density_df
-
+    # Return as a pandas Series, where each element is an array of densities for the corresponding snow profile
+    return pd.Series(density_profiles)
 
 
 
