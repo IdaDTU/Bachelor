@@ -85,6 +85,11 @@ tbH_df = SMRT_compute_tbv(mediums, 37e9, 55.0)
 # Plot tb
 plot_measurements(lat=filtered_df['TLAT'][:n], 
                   lon=filtered_df['TLON'][:n],
+                  colorbar_min = min(tbH_df['tbh']),
+                  colorbar_max = max(tbH_df['tbh']),
+                  colorbar_label = 'Brightness Temperature [K]',
+                  title = 'Brightness Temperature in the Arctiv Region',
+                  color = 'coolwarm',
                   cvalue=tbH_df['tbh'])
 
 
