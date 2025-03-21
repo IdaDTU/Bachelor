@@ -1,0 +1,49 @@
+from SMRT import SMRT_create_ice_columns, SMRT_create_snowpacks, SMRT_create_mediums, SMRT_create_sensor, SMRT_compute_tbv
+import matplotlib.pyplot as plt
+
+def sensitivity_snowpacks(layers_snow,
+                          thickness_snow,
+                          temperature_profile_snow,
+                          density_profile_snow,
+                          n):
+    """
+    Perform sensitivity analysis of TBH to snow layers and plot boxplots.
+
+    Parameters
+    ----------
+    layers_snow : int
+        Maximum number of snow layers to analyze.
+    thickness_snow : float
+        Total thickness of the snowpack.
+    temperature_profile_snow : pandas.Series or DataFrame
+        Snow temperature profile (layered data).
+    density_profile_snow : pandas.Series or DataFrame
+        Snow density profile (layered data).
+    n : any
+        Additional parameter required by SMRT_create_snowpacks.
+    """
+
+    tbH_values_per_layer = []
+
+    for layers in range(1, layers_snow):
+        # Slice temp and dens profiles for the current number of layers
+        temp_snow = temperature_profile_snow.iloc[:layers]
+        dens_snow = density_profile_snow.iloc[:layers]
+
+        # Create snowpack and compute tbH
+        snowpacks = SMRT_create_snowpacks(thickness_snow, 
+                                          temp_snow, 
+                                          dens_snow, 
+                                          n, 
+                                          layers)
+        tbH_df = SMRT_compute_tbv(snowpacks, 37e9, 55.0)
+
+        # Store all tbH values for this layer configuration
+        tbH_values_per_layer.append(tbH_df.values.flatten())
+
+    # Create boxplot
+    plt.boxplot(tbH_values_per_layer, positions=range(0, layers_snow + 1))
+    plt.xlabel('Number of Snow Layers')
+    plt.ylabel('TBH [K] at 37 GHz, 55° incidence')
+    plt.title('Sensitivity of TBH to Snow Layering')
+    plt.show()
