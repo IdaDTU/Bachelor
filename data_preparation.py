@@ -120,3 +120,13 @@ def remove_nonphysical(df,
     df = df.drop(list(dropped_rows))
 
     return df
+
+def SIC_filter(minimum, maximum, df):
+    # Create a boolean mask for valid rows (inside the range)
+    valid_mask = (df['aice'] >= minimum) & (df['aice'] <= maximum)
+    
+    # Return a new DataFrame with only valid rows
+    df_filtered = df[valid_mask].copy()
+    
+    return df_filtered
+
