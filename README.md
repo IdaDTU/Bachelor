@@ -8,5 +8,5 @@ This repository contains code, data, and documentation for our **bachelor thesis
 🔹 **Compare** results with existing satellite data and models.  
 🔹 **Explore** applications in **climate physics & remote sensing**.  
 
-## 📂 Repository Structure  
-TBD
+## 📂 Data
+The simulated and retrived data can be reached at: https://www.dropbox.com/home/Bachelor
