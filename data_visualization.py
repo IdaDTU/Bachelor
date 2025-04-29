@@ -1,83 +1,132 @@
-import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
 import numpy as np
-from scipy.stats import linregress
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from matplotlib.colors import LinearSegmentedColormap, Normalize,ListedColormap, BoundaryNorm
+import matplotlib
 
-def plot_measurements(lat, lon, colorbar_min, colorbar_max, colorbar_label, title, color, cvalue=None):
-    # Create figure and axis
-    fig, ax = plt.subplots(figsize=(10, 4))
+
+matplotlib.rcParams['font.family'] = 'Arial'
+
+# DTU color scheme
+dtu_navy = '#030F4F'
+dtu_red = '#990000'
+dtu_grey = '#DADADA'
+white = '#ffffff'
+black = '#000000'
+
+# Color intermediates
+phase1_blue = '#030F4F'
+phase2_blue = '#3d4677'
+phase3_blue = '#babecf'
+phase1_red = '#990000'
+phase2_red = '#bc5959'
+phase3_red = '#e6c1c1'
+
+# Color lists for colormaps
+dtu_coolwarm = [dtu_navy, white, dtu_red]
+dtu_blues = [dtu_navy, white]
+dtu_reds = [dtu_red, white]
+
+# Custom colormaps
+dtu_coolwarm_cmap = LinearSegmentedColormap.from_list("dtu_coolwarm", dtu_coolwarm)
+dtu_blues_cmap = LinearSegmentedColormap.from_list("dtu_blues", dtu_blues)
+dtu_reds_cmap = LinearSegmentedColormap.from_list("dtu_reds", dtu_reds)
+
+
+def plot_npstere_cmap(lat, lon, cvalue, tiepoint, colorbar_min, colorbar_max, filename='plot.pdf'):
+    """
+    Plot scatter data on a North Polar Stereographic map using a continuous DTU-style colormap (Cartopy version).
+
+    Parameters:
+    lat: 1D array of latitudes
+    lon: 1D array of longitudes
+    cvalue: 1D array of values
+    tiepoint: value that defines the background color
+    colorbar_min: minimum colorbar value
+    colorbar_max: maximum colorbar value
+    filename: output filename
+    """
+    fig, ax = plt.subplots(figsize=(10, 10),
+                            subplot_kw={'projection': ccrs.NorthPolarStereo()})
+
+    ax.set_extent([-180, 180, 66.5, 90], crs=ccrs.PlateCarree())
+
+    ax.add_feature(cfeature.LAND, facecolor=dtu_grey)
+    ax.add_feature(cfeature.COASTLINE)
+
+    gl = ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
+    gl.xlabel_style = {'size': 16}
+    gl.ylabel_style = {'size': 16}
+
+    norm = Normalize(vmin=colorbar_min, vmax=colorbar_max)
+    tiepoint_color = dtu_coolwarm_cmap(norm(tiepoint))
+    ax.set_facecolor(tiepoint_color)
+
+    masked_values = np.ma.masked_where(cvalue == tiepoint, cvalue)
+
+    sc = ax.scatter(lon, lat,
+                    c=masked_values,
+                    cmap=dtu_coolwarm_cmap,
+                    s=0.01,
+                    transform=ccrs.PlateCarree())
+
+    plt.colorbar(sc, ax=ax, orientation='vertical', label='tb', shrink=0.8, pad=0.09)
+
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+
+def plot_npstere_categorical(lat, lon, cvalue,output_path):
+    """
+    Plot scatter data on a North Polar Stereographic map with categorical colors.
     
-    # Set up the map with North Polar Stereographic projection
-    # lon_0,lat_0 is central point
-    m = Basemap(projection='npstere',
-                boundinglat=70,   # Only show latitudes north of 66.5° N
-                lon_0=0,   # Central meridian; adjust as needed
-                resolution='l',
-                ax=ax,
-                round = True)
+    Parameters:
+    lat: 1D array of latitudes
+    lon: 1D array of longitudes
+    cvalue: 1D array of continuous values to bin into categories
+    """
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw={'projection': ccrs.NorthPolarStereo()})
 
-    # Draw map features
-    m.drawcoastlines()
-    m.drawparallels(np.arange(50, 90, 10), labels=[True, True, False, False])
-    m.drawmeridians(np.arange(-180, 180, 30), labels=[True, False, False, True])
-    
-    OW_tiepoint = 161.35
-    
-    # Create lat/lon grid based on map boundary (boundinglat=70)
-    OW_lon = np.linspace(-180, 180, 360)  # Longitude from -180 to 180
-    OW_lat = np.linspace(70, 90, 180)  # Latitude from 70 to 90
+    colors = ['#003366',
+              '#204d80',
+              '#4d73b3',
+              '#7aa1cc',
+              '#a7c8e6',
+              '#d3e6f5',
+              '#ffffff']
 
-    # Create meshgrid for lat/lon
-    OW_lon_grid, OW_lat_grid = np.meshgrid(OW_lon, OW_lat)
+    bins = [-np.inf, 0, 0.15, 0.30, 0.70, 1.20, 2.0, np.inf]
+    categories = ['OW', '0-0.15', '0.15-0.30', '0.30-0.70', '0.70-1.20', '1.20-2.0', '2.0+']
 
-    # Convert the lat/lon grid to map projection coordinates (x, y)
-    OW_x, OW_y = m(OW_lon_grid, OW_lat_grid)
+    cvalue_binned = np.digitize(cvalue, bins) - 1
 
-    # Convert lat/lon to map coordinates
-    x, y = m(lon, lat)
-    
-    OW_plot = np.full_like(OW_x, OW_tiepoint, dtype=float)
-    
-    
-    sc = ax.scatter(OW_x, OW_y, c=OW_plot, cmap=color, s=10, alpha=0.8, vmin = colorbar_min, vmax = colorbar_max)
-    
-    # Scatter plot
-    if cvalue is not None:
-        ax.scatter(x, y, c=cvalue, cmap=color, s=10, alpha=0.8, vmin = colorbar_min, vmax = colorbar_max)
-        plt.colorbar(sc, ax=ax, orientation='vertical', label=colorbar_label)
-    else:
-        ax.scatter(x, y, color='red', edgecolors='k', s=10, alpha=0.8, vmin = colorbar_min, vmax = colorbar_max)  # Default single color
+    ax.set_extent([-180, 180, 66.5, 90], crs=ccrs.PlateCarree())
+    ax.add_feature(cfeature.OCEAN, facecolor=dtu_navy)
+    ax.add_feature(cfeature.LAND, facecolor=dtu_grey)
+    ax.add_feature(cfeature.COASTLINE)
 
-    # Fill land
-    m.fillcontinents(color='darkgrey', lake_color='lightblue')    
+    gl = ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
+    gl.xlabel_style = {'size': 16}
+    gl.ylabel_style = {'size': 16}
 
-    # Set title
-    ax.set_title(title, fontsize=14)
+    cmap = ListedColormap(colors)
+    norm = BoundaryNorm(np.arange(-0.5, len(categories)+0.5, 1), cmap.N)
 
-    # Show the plot
-    #plt.savefig("/zhome/57/6/168999/Desktop/plot.png", dpi=300, bbox_inches="tight") #jose hpc path
-    #plt.savefig("/zhome/da/d/187040/plot.pdf", dpi=300, bbox_inches="tight") #ida hpc path
-    plt.show() # used for Spyder
+    sc = ax.scatter(lon, lat,
+                    c=cvalue_binned,
+                    cmap=cmap,
+                    norm=norm,
+                    s=0.1,
+                    edgecolor='none',
+                    transform=ccrs.PlateCarree())
 
-def plot_sensitivity(n, variable, tbv, title, xlabel, ylabel, labels, name):
-    plt.figure()
-    
-    for i in range(len(tbv)):
-        tbv_i = tbv[i].values.ravel()
-        print(f"variable[:n]: shape={variable[:n].shape}")
-        print(f"tbv[i]: shape={tbv[i].shape}")
-        #plt.scatter(variable[:n], tbv[i], label=labels[i])
-        slope, intercept, r_value, p_value, std_err = linregress(variable[:n], tbv_i)
-        plt.plot(variable[:n], slope * variable[:n] + intercept, label='f{labels[i]}: y={slope:.2f}x + {intercept:.2f}')
-        
-        
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.legend()
+    cbar = plt.colorbar(sc, ax=ax, fraction=0.044, pad=0.09, boundaries=np.arange(-0.5, len(categories)+0.5, 1))
+    cbar.set_ticks(np.arange(len(categories)))
+    cbar.set_ticklabels(categories)
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label('Ice Thickness Category [m]', fontsize=18, labelpad=15)
 
-    #plt.savefig("/zhome/da/d/187040/plot.pdf", dpi=300, bbox_inches="tight") #ida hpc path
-    plt.savefig("/zhome/57/6/168999/Desktop/plots/sensitivity_plot_{name}.png", dpi=300, bbox_inches="tight")
-    #plt.show()
-    
-
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.show()
