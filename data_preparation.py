@@ -61,7 +61,7 @@ def create_combined_dataframe(ds, layers_ice):
     df = df[df['TLAT'] >= 55.5]
 
     # Define grouping
-    group_cols = ['TLAT', 'TLON', 'hi', 'hs', 'tsnz', 'tair', 'snow']
+    group_cols = ['TLAT', 'TLON', 'hi', 'hs', 'tsnz', 'tair', 'snow','aicen']
 
     # Aggregate into profiles
     grouped = df.groupby(group_cols).agg({'tinz': lambda x: list(x)[:layers_ice],
