@@ -32,60 +32,50 @@ def combine_nc_files(directory):
 def create_combined_dataframe(ds, layers_ice):
     """
     Create a DataFrame containing sea ice temperature and salinity profiles.
-    It selects one representative row per unique location+ice state group based on the maximum 'aicen' value.
-    Then it gathers temperature and salinity profiles (tinz, sinz) from all layers for each group.
-    
+    It selects one representative row per unique location+ice state group based on aggregated profiles.
+
     Parameters:
         ds (xarray.Dataset): Dataset with sea ice variables.
         layers_ice (int): Number of ice layers to include in the temperature and salinity profiles.
-    
+
     Returns:
         pd.DataFrame: A DataFrame with one row per group including metadata and the temperature/salinity profiles.
     """
-    
     # Keep only the relevant variables from the dataset
     ds = ds[['TLAT', 'TLON', 'hi', 'hs', 'Sinz', 'Tinz', 'Tsnz', 'Tair', 'snow', 'nc','aicen']]
 
-    # Convert the xarray Dataset to a pandas DataFrame and reset the index
+    # Convert to pandas DataFrame
     df = ds.to_dataframe().reset_index()
 
-    # Convert temperatures from Celsius to Kelvin and salinity from g/m³ to kg/m³
+    # Convert units
     df['tinz'] = df['Tinz'] + 273.15
     df['tsnz'] = df['Tsnz'] + 273.15
     df['tair'] = df['Tair'] + 273.15
     df['sinz'] = df['Sinz'] / 1000
 
-    # Drop the original variables after conversion to avoid confusion
+    # Drop originals
     df.drop(columns=['Tinz', 'Tsnz', 'Tair', 'Sinz'], inplace=True)
 
-    # Remove rows with missing values and filter for Arctic latitudes
+    # Clean and filter
     df = df.dropna()
     df = df[df['TLAT'] >= 55.5]
 
-    # Define the grouping columns based on spatial location and surface variables
+    # Define grouping
     group_cols = ['TLAT', 'TLON', 'hi', 'hs', 'tsnz', 'tair', 'snow']
 
-    # For each group, identify the row with the maximum 'aicen' value to serve as the representative row
-    idx_max_aicen = df.groupby(group_cols)['aicen'].idxmax()
-    df_max_aicen = df.loc[idx_max_aicen].reset_index(drop=True)
+    # Aggregate into profiles
+    grouped = df.groupby(group_cols).agg({'tinz': lambda x: list(x)[:layers_ice],
+                                          'sinz': lambda x: list(x)[:layers_ice] }).reset_index()
 
-    # Aggregate temperature and salinity values for each group into lists representing vertical profiles
-    profiles = ( df.groupby(group_cols).agg({ 'tinz': lambda x: list(x)[:layers_ice],  # Limit profile to the specified number of layers
-                                             'sinz': lambda x: list(x)[:layers_ice]}).reset_index())
+    # Rename and convert to numpy arrays
+    grouped = grouped.rename(columns={'tinz': 'temperature_profiles',
+                                      'sinz': 'salinity_profiles' })
 
-    # Merge the representative row information with the profile data
-    merged_df = pd.merge(df_max_aicen, profiles, on=group_cols, suffixes=('', '_profile'))
+    grouped['temperature_profiles'] = grouped['temperature_profiles'].apply(np.array)
+    grouped['salinity_profiles'] = grouped['salinity_profiles'].apply(np.array)
 
-    # Rename the profile columns for clarity
-    merged_df = merged_df.rename(columns={
-        'tinz_profile': 'temperature_profiles',
-        'sinz_profile': 'salinity_profiles'})
+    return grouped
 
-    # Convert the profile lists to numpy arrays for consistency and potential numerical operations
-    merged_df['temperature_profiles'] = merged_df['temperature_profiles'].apply(np.array)
-    merged_df['salinity_profiles'] = merged_df['salinity_profiles'].apply(np.array)
-
-    return merged_df
 
 def check_land(df):
     # Helper function

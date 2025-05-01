@@ -5,10 +5,10 @@ import pandas as pd
 #%% -------------------------- User Input --------------------------
 
 # Set the folder path containing CSV files
-directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/CSV/SMRT/CIMR/FYI/1.4GHz/Vertical' 
+directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/CSV/SMRT/CIMR/FYI/36.5GHz/Horizontal' 
 
 # Set the desired name for the combined CSV (without .csv extension here)
-name = 'CIMR_FYI_1.4GHz_vertical_combined' 
+name = 'CIMR_FYI_36.5GHz_horizontal_combined' 
 
 # Define full output path including file name
 output_directory = f'{directory}/combined/{name}.csv' 

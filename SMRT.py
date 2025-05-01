@@ -8,12 +8,10 @@ def SMRT_create_ice_columns(thickness_ice,
                 n,
                 ice_type,
                 layers_ice):
-    
     ice_columns = []
     # Loop over each index to create the ice columns.
     for i in range(n):
         l = layers_ice  #  ice layers
-        print(f"Processing ice_columns index {i}. Finished: {(i/n)}...")
         # Distribute the total ice thickness evenly across the layers.
         thickness = np.array([thickness_ice.iloc[i] / l] * l)
         
@@ -48,36 +46,34 @@ def SMRT_create_ice_columns(thickness_ice,
 
 def SMRT_create_snowpacks(thickness_snow,
                           temperature_profile_snow,
-                          denisty_profile_snow,
+                          density_profile_snow,
                           n,
                           layers_snow):
     snowpacks = []
     for i in range(n):    
-        l_s=layers_snow #3 snow layers
-        print(f"Processing snowpacks index: {i}. Finished: {(i/n)}...")
+        l_s = layers_snow
         thickness_s = np.linspace(0, thickness_snow.iloc[i], l_s)
-        p_ex_s = np.linspace(0.000054, 0.000442, l_s) 
+        p_ex_s = np.linspace(0.00005, 0.0003, l_s) 
         temperature_s = temperature_profile_snow.iloc[i]
+        density_s = density_profile_snow.iloc[i]
+        stickiness = 0.2
         
-        density_s = denisty_profile_snow.iloc[i]
-        
-        # create the snowpack
         snowpack = make_snowpack(thickness=thickness_s,
                                  microstructure_model="exponential",
                                  density=density_s,
+                                 stickiness=stickiness,
                                  temperature=temperature_s,
                                  corr_length=p_ex_s)
     
-        # Store the created snowpack.
         snowpacks.append(snowpack)
     return snowpacks
+
     
 def SMRT_create_mediums(snowpacks,
                        ice_columns,
                        n):
     mediums=[]
     for i in range(n):
-        print(f"Processing mediums index: {i}")
         medium = snowpacks[i] + ice_columns[i]
         mediums.append(medium) 
     
@@ -110,6 +106,34 @@ def SMRT_create_sensor(name):
         print('Invalid sensor name')
         return None
 
+def SMRT_compute_tbh(mediums, freq, theta):
+    """
+    Computes the brightness temperature in horizontal polarization for a given list of mediums.
+    
+    Parameters:
+    - mediums: list of medium objects to process
+    - freq: Frequency in Hz (e.g., 37e9 for 37 GHz)
+    - theta: Incidence angle in degrees
+    
+    Returns:
+    - Series with computed brightness temperatures (tbh).
+    """
+    results = []
+
+    for i, medium in enumerate(mediums):
+        print(i)
+        
+        sensor = sensor_list.passive(freq, theta)
+        n_max_stream = 64
+        m = make_model("iba", "dort", rtsolver_options={"n_max_stream": n_max_stream, "phase_normalization": "forced"})
+        res = m.run(sensor, medium)
+        
+        tbh = res.TbH()
+        results.append(tbh)
+
+    return pd.Series(results, name='tbh')
+
+
 def SMRT_compute_tbv(mediums, freq, theta):
     """
     Computes the brightness temperature in vertical polarization for a given list of mediums.
@@ -120,28 +144,19 @@ def SMRT_compute_tbv(mediums, freq, theta):
     - theta: Incidence angle in degrees
     
     Returns:
-    - DataFrame with computed brightness temperatures (tbv).
+    - Series with computed brightness temperatures (tbv).
     """
     results = []
 
     for i, medium in enumerate(mediums):
-        print(f"Processing index: {i}")
+        print(i)
         
-        # Create the sensor object for the given frequency and incidence angle.
         sensor = sensor_list.passive(freq, theta)
-        
-        # Increase the number of streams for a more accurate TB calculation
-        n_max_stream = 128  # Default is 32; increase if using > 1 snow layer on top of sea ice.
-        m = make_model("iba", "dort", rtsolver_options={"n_max_stream": n_max_stream})
-        
-        # Run the model for snow-covered sea ice:
+        n_max_stream = 64
+        m = make_model("iba", "dort", rtsolver_options={"n_max_stream": n_max_stream, "phase_normalization": "forced"})
         res = m.run(sensor, medium)
         
-        # Compute the brightness temperature in vertical polarization.
-        tbh = res.TbH()
-        results.append(tbh)
+        tbv = res.TbV()
+        results.append(tbv)
 
-    # Create a DataFrame to store the results.
-    tbH_df = pd.DataFrame({'tbh': results})
-    return tbH_df
-
+    return pd.Series(results, name='tbv')
