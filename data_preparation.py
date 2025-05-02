@@ -42,7 +42,7 @@ def create_combined_dataframe(ds, layers_ice):
         pd.DataFrame: A DataFrame with one row per group including metadata and the temperature/salinity profiles.
     """
     # Keep only the relevant variables from the dataset
-    ds = ds[['TLAT', 'TLON', 'hi', 'hs', 'Sinz', 'Tinz', 'Tsnz', 'Tair', 'snow', 'nc','aicen']]
+    ds = ds[['TLAT', 'TLON', 'hi', 'hs', 'Sinz', 'Tinz', 'Tsnz', 'Tair', 'snow', 'nc','aice','iage']]
 
     # Convert to pandas DataFrame
     df = ds.to_dataframe().reset_index()
@@ -61,7 +61,7 @@ def create_combined_dataframe(ds, layers_ice):
     df = df[df['TLAT'] >= 55.5]
 
     # Define grouping
-    group_cols = ['TLAT', 'TLON', 'hi', 'hs', 'tsnz', 'tair', 'snow','aicen']
+    group_cols = ['TLAT', 'TLON', 'hi', 'hs', 'tsnz', 'tair', 'snow','aice','iage']
 
     # Aggregate into profiles
     grouped = df.groupby(group_cols).agg({'tinz': lambda x: list(x)[:layers_ice],
