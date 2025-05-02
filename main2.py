@@ -35,7 +35,7 @@ thickness_ice = CICE_csv['hi'] # in m
 thickness_snow = CICE_csv['hs'] # in m
 temperature_air = CICE_csv['tair'] # in m
 accumulation_rate = CICE_csv['snow'] #in cm/day
-concentration_ice = CICE_csv['aicen'] # fraction
+concentration_ice = CICE_csv['aice'] # fraction
 
 # Define geographic location
 latitude = CICE_csv['TLAT']
