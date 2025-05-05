@@ -4,11 +4,6 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap, Normalize,ListedColormap, BoundaryNorm
 import matplotlib
-import numpy as np
-import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-from matplotlib.colors import ListedColormap, BoundaryNorm
 
 
 matplotlib.rcParams['font.family'] = 'Arial'
@@ -39,20 +34,14 @@ dtu_blues_cmap = LinearSegmentedColormap.from_list("dtu_blues", dtu_blues)
 dtu_reds_cmap = LinearSegmentedColormap.from_list("dtu_reds", dtu_reds)
 
 
-import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-import numpy as np
-from matplotlib.colors import Normalize
-
 def plot_npstere_cmap(lat, lon, cvalue, colorbar_min, colorbar_max, filename='plot.pdf'):
     """
-    Plot scatter data on a North Polar Stereographic map using a continuous DTU-style colormap (Cartopy version).
+    Plot scatter data on a North Polar Stereographic map using a continuous colormap.
 
     Parameters:
     lat: 1D array of latitudes
     lon: 1D array of longitudes
-    cvalue: 1D array of values
+    cvalue: 1D array of values to color
     colorbar_min: minimum colorbar value
     colorbar_max: maximum colorbar value
     filename: output filename
@@ -61,7 +50,6 @@ def plot_npstere_cmap(lat, lon, cvalue, colorbar_min, colorbar_max, filename='pl
                             subplot_kw={'projection': ccrs.NorthPolarStereo()})
 
     ax.set_extent([-180, 180, 66.5, 90], crs=ccrs.PlateCarree())
-
     ax.add_feature(cfeature.LAND, facecolor=dtu_grey)
     ax.add_feature(cfeature.COASTLINE)
 
@@ -73,22 +61,20 @@ def plot_npstere_cmap(lat, lon, cvalue, colorbar_min, colorbar_max, filename='pl
 
     sc = ax.scatter(lon, lat,
                     c=cvalue,
-                    cmap=dtu_coolwarm_cmap,  # replace with dtu_coolwarm_cmap if you have a custom one
+                    cmap=dtu_coolwarm_cmap,
                     norm=norm,
                     s=0.01,
                     transform=ccrs.PlateCarree())
 
     cbar = plt.colorbar(sc, ax=ax, orientation='vertical', shrink=0.8, pad=0.09)
-    cbar.set_label('tb', fontsize=18, labelpad=15)
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label('TbH [K]', fontsize=18, labelpad=15)
 
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.show()
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap, BoundaryNorm
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
+
+
 
 def plot_npstere_categorical(lat, lon, cvalue, output_path):
     """
@@ -148,38 +134,9 @@ def plot_npstere_categorical(lat, lon, cvalue, output_path):
 
 
 
-
-def plot_data(lat, lon, cvalue, colorbar_min, colorbar_max, filename='plot.pdf'):
-    """
-    Plot scatter data on a North Polar Stereographic map using a continuous DTU-style colormap (Cartopy version).
-
-    Parameters:
-    lat: 1D array of latitudes
-    lon: 1D array of longitudes
-    cvalue: 1D array of values
-    colorbar_min: minimum colorbar value
-    colorbar_max: maximum colorbar value
-    filename: output filename
-    """
-    fig, ax = plt.subplots(figsize=(10, 10),
-                            subplot_kw={'projection': ccrs.NorthPolarStereo()})
-
-    ax.set_extent([-180, 180, 65.5, 90], crs=ccrs.PlateCarree())
-
-
-
-    norm = Normalize(vmin=colorbar_min, vmax=colorbar_max)
-
-    sc = ax.scatter(lon, lat,
-                    c=cvalue,
-                    cmap='coolwarm',  # replace with dtu_coolwarm_cmap if you have a custom one
-                    norm=norm,
-                    s=0.01,
-                    transform=ccrs.PlateCarree())
-
-    cbar = plt.colorbar(sc, ax=ax, orientation='vertical', shrink=0.8, pad=0.09)
-    cbar.set_label('tb', fontsize=18, labelpad=15)
-
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
+def plot_regular(lat, lon, cvalue):
+    plt.figure(figsize=(8, 6))
+    plt.scatter(lon, lat, c=cvalue, cmap='viridis', s=10)
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
     plt.show()
-

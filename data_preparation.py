@@ -76,69 +76,32 @@ def create_combined_dataframe(ds, layers_ice):
 
     return grouped
 
-
-def check_land(df):
-    # Helper function
-    # Set up Basemap with North Polar Stereographic projection
-    m = Basemap(projection='npstere',
-                boundinglat=66.5,
-                lon_0=0,
-                resolution='l')
-    
-    # Collect land polygons into a MultiPolygon
-    land_polygons = []
-    for polygon in m.drawcoastlines(linewidth=0.1).get_paths():
-        try:
-            coords = polygon.vertices
-            x, y = zip(*coords)
-            lon, lat = m(x, y, inverse=True)
-            poly_coords = list(zip(lon, lat))
-            land_polygons.append(Polygon(poly_coords))
-        except:
-            continue
-    land_mask = MultiPolygon(land_polygons)
-
-    # Check if each point is on land
-    def is_land(lat, lon):
-        x, y = m(lon, lat)
-        return land_mask.contains(Point(x, y))
-
-    df['land'] = df.apply(lambda row: is_land(row['TLAT'], row['TLON']), axis=1)
-    
-    return df
-
 def remove_nonphysical(df, layers_ice):
-    # Remove land pixels using a helper function
-    df = check_land(df)
-    
-    # Keep only ocean pixels (land == False)
-    df = df[df['land'] == False]
-    
-    # Remove rows with surface snow temperature (tsnz) above melting point
-    df = df[df['tsnz'] <= 273.15]
-    
-    # Set to collect indices of rows that violate physical constraints
     dropped_rows = set()
 
-    # Check temperature profiles: all values in each profile must be below or equal to 273.15 K
-    for i in range(len(df['temperature_profiles'])):
+    # Identify rows with surface snow temperature above melting point
+    tsnz_violation = df[df['tsnz'] > 273.15].index
+    dropped_rows.update(tsnz_violation)
+
+    # Check temperature profiles
+    for i, profile in enumerate(df['temperature_profiles']):
         for j in range(layers_ice):
-            if df['temperature_profiles'].iloc[i][j] > 273.15:
+            if profile[j] > 273.15:
                 dropped_rows.add(df.index[i])
-                break  # No need to check more layers for this profile
+                break
 
-    # Check salinity profiles: all values in each profile must be >= 0.002 (avoid non-physical salinity)
-    for i in range(len(df['salinity_profiles'])):
+    # Check salinity profiles
+    for i, profile in enumerate(df['salinity_profiles']):
         for j in range(layers_ice):
-            if df['salinity_profiles'].iloc[i][j] < 0.002:
+            if profile[j] < 0.002:
                 dropped_rows.add(df.index[i])
-                break  # Skip the rest once a non-physical value is found
+                break
 
-    # Drop rows that violated any of the above constraints
-    df = df.drop(list(dropped_rows))
+    # Extract and drop
+    OW_df = df.loc[list(dropped_rows)].copy().reset_index(drop=True)
+    df = df.drop(index=dropped_rows).reset_index(drop=True)
 
-    return df
-
+    return df, OW_df
 
 def SIC_filter(minimum, maximum, df):
     # Create a boolean mask for valid rows (inside the range)
@@ -148,9 +111,6 @@ def SIC_filter(minimum, maximum, df):
     df_filtered = df[valid_mask].copy()
     
     return df_filtered
-
-
-
 
 
 
