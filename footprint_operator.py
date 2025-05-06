@@ -87,7 +87,7 @@ def make_kernel(sigma1, sigma2):
 
 def create_img(lat, lon, tb, output_path):
     fig, ax = plt.subplots(figsize=(10, 10), dpi=300, subplot_kw={'projection': ccrs.NorthPolarStereo()})
-    ax.set_extent([-180, 180, 65.5, 90], crs=ccrs.PlateCarree())
+    ax.set_extent([-180, 180, 66.5, 90], crs=ccrs.PlateCarree())
 
     # Use your desired colormap (e.g., dtu_coolwarm_cmap)
     sc = ax.scatter(lon, lat, c=tb, cmap=dtu_coolwarm_cmap, s=0.01, transform=ccrs.PlateCarree())
