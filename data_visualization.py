@@ -89,9 +89,9 @@ def plot_npstere_categorical(lat, lon, cvalue, output_path):
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw={'projection': ccrs.NorthPolarStereo()})
 
     # Define colors and categories
-    colors = ['#003366', '#204d80', '#4d73b3', '#7aa1cc', '#a7c8e6', '#d3e6f5', '#ffffff']
     bins = [-np.inf, 0, 0.15, 0.30, 0.70, 1.20, 2.0, np.inf]
-    categories = ['OW', '0-0.15', '0.15-0.30', '0.30-0.70', '0.70-1.20', '1.20-2.0', '2.0+']
+    colors = [dtu_grey,'#003366', '#204d80', '#4d73b3', '#7aa1cc', '#a7c8e6', '#d3e6f5', '#ffffff']
+    categories = ['Land','OW', '0-0.15', '0.15-0.30', '0.30-0.70', '0.70-1.20', '1.20-2.0', '2.0+']
 
     # Digitize values into bin indices (0-based)
     cvalue_binned = np.digitize(cvalue, bins, right=False) - 1

@@ -10,16 +10,16 @@ SMRT_directory = "C:/Users/user/OneDrive/Desktop/Bachelor/CSV/SMRT/combine"
 # Set folder for CICE and OW
 OW_input_path = "C:/Users/user/OneDrive/Desktop/Bachelor/CSV/CICE/OW"
 CICE_directory = "C:/Users/user/OneDrive/Desktop/Bachelor/CSV/CICE/"
-tiepoint = 161
+tiepoint_OW = 145
 
 # Set the desired name for the combined CSV (without .csv extension here)
-name_SMRT= 'CIMR_FYI_10.65GHz_horizontal_combined' 
+name_SMRT= 'CIMR_FYI_36.5GHz_horizontal_combined' 
 
 
 # ----------------------------------------------------------------
 # Define full output path including file name
 SMRT_output_directory = f'{SMRT_directory}/{name_SMRT}.csv' 
-CICE_output_directory = f'{CICE_directory}/OW_{tiepoint}.csv'
+CICE_output_directory = f'{CICE_directory}/OW_{tiepoint_OW}.csv'
 
 def combine_csv_files(directory, output_directory):
     # Find all CSV files in the specified directory
@@ -53,7 +53,7 @@ def add_OW_column(OW_input_path, tiepoint, CICE_output_directory):
 
     
 # Combine SMRT
-csv = combine_csv_files(SMRT_directory, SMRT_output_directory)  
+#csv = combine_csv_files(SMRT_directory, SMRT_output_directory)  
 
 # Make OW columns in CICE csv
-#add_OW_column(OW_input_path, tiepoint, CICE_output_directory)
+add_OW_column(OW_input_path, tiepoint_OW, CICE_output_directory)

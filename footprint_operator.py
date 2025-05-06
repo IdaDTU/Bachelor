@@ -1,13 +1,20 @@
 import pandas as pd
 import numpy as np
 from scipy.interpolate import griddata
-import os
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
-from io import BytesIO
-from PIL import Image
+import cartopy.feature as cfeature
+from sklearn.preprocessing import MinMaxScaler
+from data_visualization import dtu_coolwarm_cmap,dtu_grey
+import cv2
 
-def footprint_4km_to_1km_grid(csv_path, name, output_dir, method='linear'):
+
+def normalize(df,tb_min,tb_max):
+    scaler = MinMaxScaler()
+    df['tb'] = scaler.fit_transform(df[['tb']])
+    return df
+
+def upsample(df, output_path):
     """
     Interpolates scattered CSV data to a 1x1 km regular lat/lon grid and saves the result to a new CSV file.
 
@@ -20,13 +27,6 @@ def footprint_4km_to_1km_grid(csv_path, name, output_dir, method='linear'):
     Returns:
         DataFrame with columns: lat, lon, interpolated tb.
     """
-    # Load CSV
-    df = pd.read_csv(csv_path)
-
-    # Check required columns
-    for col in ['lat', 'lon', 'tb']:
-        if col not in df.columns:
-            raise ValueError(f"Missing required column: {col}")
 
     # Extract columns
     lat = df["lat"].values
@@ -49,7 +49,7 @@ def footprint_4km_to_1km_grid(csv_path, name, output_dir, method='linear'):
     lon_grid, lat_grid = np.meshgrid(lon_new, lat_new)
 
     # Interpolate
-    var_interp = griddata(points, var, (lon_grid, lat_grid), method=method)
+    var_interp = griddata(points, var, (lon_grid, lat_grid), method='linear')
 
     # Flatten and create output DataFrame
     df_out = pd.DataFrame({"lat": lat_grid.ravel(),
@@ -58,58 +58,11 @@ def footprint_4km_to_1km_grid(csv_path, name, output_dir, method='linear'):
 
     # Remove NaNs
     df_out = df_out.dropna()
-
-    # Create output directory if it does not exist
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, name)
-
+    
     # Save output
     df_out.to_csv(output_path, index=False)
 
     return df_out
-
-def resampled_to_image(lat, lon, cvalue, filename):
-    """
-    Plot scatter data on a North Polar Stereographic map using a grayscale colormap (Cartopy version),
-    save it to a file, and return the image as a 2D NumPy array (grayscale, 0-255 uint8).
-
-    Parameters:
-    lat: 1D array of latitudes
-    lon: 1D array of longitudes
-    cvalue: 1D array of values
-    filename: output filename (including extension, e.g., .png or .jpg)
-
-    Returns:
-    img_array: 2D NumPy array of the saved image (grayscale)
-    """
-    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw={'projection': ccrs.NorthPolarStereo()})
-    ax.set_extent([-180, 180, 65.5, 90], crs=ccrs.PlateCarree())
-
-    ax.scatter(lon, lat, c=cvalue, cmap='gray', s=0.01, transform=ccrs.PlateCarree())
-
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
-
-    buf = BytesIO()
-    fig.savefig(buf, format='png', dpi=300, bbox_inches='tight')
-    buf.seek(0)
-
-    img = Image.open(buf)
-    img_array = np.array(img)
-
-    plt.close(fig)
-    buf.close()
-
-    # Convert to grayscale if necessary
-    if img_array.ndim == 3:
-        img_array = img_array[..., :3]  # Drop alpha channel if it exists
-        img_array = np.dot(img_array, [0.2989, 0.5870, 0.1140])  # Convert RGB to grayscale
-
-    if img_array.max() <= 1.0:
-        img_array = img_array * 255
-
-    img_array = img_array.astype(np.uint8)
-
-    return img_array
 
 def calculate_sigmas(cross_track,along_track):
      sigma_along = along_track/2.355
@@ -132,101 +85,29 @@ def make_kernel(sigma1, sigma2):
     kernel = pdf1[:, np.newaxis] * pdf2[np.newaxis, :]
     return kernel
 
+def create_img(lat, lon, tb, output_path):
+    fig, ax = plt.subplots(figsize=(10, 10), dpi=300, subplot_kw={'projection': ccrs.NorthPolarStereo()})
+    ax.set_extent([-180, 180, 65.5, 90], crs=ccrs.PlateCarree())
 
-#%%
+    # Use your desired colormap (e.g., dtu_coolwarm_cmap)
+    sc = ax.scatter(lon, lat, c=tb, cmap=dtu_coolwarm_cmap, s=0.01, transform=ccrs.PlateCarree())
 
+    ax.coastlines()
+    land_feature = cfeature.NaturalEarthFeature(category='physical',
+                                                name='land',
+                                                scale='10m',
+                                                facecolor=dtu_grey)
+    ax.add_feature(land_feature, zorder=10)
 
+    ax.axis('off')
+    fig.savefig(output_path, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
 
+    # Read in both RGB and grayscale versions
+    img_bgr = cv2.imread(output_path, cv2.IMREAD_COLOR)
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
 
-
-
-
-
-
-
-
-
-
-
-#%%
-
-
-# # Load an example image
-# image = plt.imread('your_image.png')  # make sure to replace this with your image path
-
-# # If it's a color image, convert to grayscale
-# if image.ndim == 3:
-#     image = np.mean(image, axis=2)
-
-# # Create kernel
-# kernel = make_kernel(sigma1=10, sigma2=20)
-
-# # Convolve image with kernel
-# blurred_image = scipy.signal.convolve2d(image, kernel, mode='same', boundary='symm')
-
-# # Plot original and blurred image
-# plt.figure(figsize=(12, 6))
-# plt.subplot(1, 2, 1)
-# plt.title('Original Image')
-# plt.imshow(image, cmap='gray')
-# plt.axis('off')
-
-# plt.subplot(1, 2, 2)
-# plt.title('Blurred Image')
-# plt.imshow(blurred_image, cmap='gray')
-# plt.axis('off')
-
-# plt.show()
-
-
-
-
-
-# #%%
-# from scipy import signal
-# kernel37v_cimr=make_kernel(calculate_sigmas(3,5))
-
-# #Ivanova et al. southern hemisphere OW FY tie-points for AMSRE
-# tp={'fy6v':257.04,  'my6v': 254.18, 'ow6v':159.69,  'fy6h': 236.52, 'my6v': 225.37, 'ow6h': 80.15,\
-#     'fy10v':257.23, 'my10v':251.65, 'ow10v':166.31, 'fy10h':238.50, 'my10h':221.47, 'ow10h':86.62,\
-#     'fy18v':258.58, 'my18v':246.10, 'ow18v':185.34, 'fy18h':242.80, 'my18h':217.65, 'ow18h':110.83,\
-#     'fy22v':257.56, 'my22v':240.65, 'ow22v':201.53, 'fy22h':242.61, 'my22h':213.79, 'ow22h':137.19,\
-#     'fy37v':253.84, 'my37v':226.51, 'ow37v':212.57, 'fy37h':239.96, 'my37h':204.66, 'ow37h':149.07,\
-#     'fy90v':242.81, 'my90v':210.22, 'ow90v':247.59, 'fy90h':232.40, 'my90h':197.78, 'ow90h':207.20}
-
-# 1km_res = plt.imread('Antarctica.A2008055.0330.250m.png')
-
-# #values inbetween 0 and 1: brightness to SIC
-# lower=(1km_res < 0.01)
-# upper=(1km_res > 0.99)
-# 1km_res[lower]=0.0
-# 1km_res[upper]=1.0    
-    
-# tb37v = (1.0-1km_res) * tp['ow37v'] + 1km_res * tp['fy37v']
-# cimr37v = signal.fftconvolve(tb37v, kernel37v_cimr[:, :, np.newaxis], mode='same')
-
-# #%%
-
-# # Load CSV as 2D array
-# data = df.to_numpy()
-
-# # Create Gaussian kernel
-# kernel = make_kernel(sigma1=2.1231422505307855, sigma2=1.2738853503184713)
-
-# # Convolve data with kernel (same size output)
-# smoothed = convolve2d(data, kernel, mode='same', boundary='symm')
-
-# # Optional: Save smoothed data
-# smoothed_df = pd.DataFrame(smoothed).to_csv("smoothed_output.csv", index=False, header=False)
-# print(smoothed_df)
-
-# #%% Optional: visualize
-# plt.imshow(smoothed, cmap='viridis')
-# plt.title("Smoothed Data")
-# plt.colorbar()
-# plt.show()
-
-
-
+    return img_rgb, img_gray
 
 

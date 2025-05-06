@@ -14,8 +14,8 @@ t = 0
 data_directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/data/test' # Ida directory 
 
 # Insert output directory for CICE csv
-output_directory = f'C:/Users/user/OneDrive/Desktop/Bachelor/csv/test_CICE_{layers_ice}_layers_snow'
-
+output_directory_CICE = 'C:/Users/user/OneDrive/Desktop/Bachelor/csv/CICE'
+output_directory_OW = 'C:/Users/user/OneDrive/Desktop/Bachelor/csv/OW'
 # ---------------------------------------------------------------- # 
 
 # Combine all .nc files in directory into one
@@ -31,9 +31,11 @@ input_df =  create_combined_dataframe(ds_subset, layers_ice)
 print('input_df created...')
 
 # Remove unphysical data from dataframe
-filtered_df = remove_nonphysical(input_df, layers_ice)
+filtered_df,dropped_df = remove_nonphysical(input_df, layers_ice)
 print(f'outliers removed from input_df: {len(input_df)-len(filtered_df)} ...')
 
 # Convert to CSV
-CICE_csv = filtered_df.to_csv(output_directory, index=False) 
-print('CICE.csv created...')
+CICE_csv = filtered_df.to_csv(output_directory_CICE, index=False) 
+OW_csv = dropped_df.to_csv(output_directory_OW, index=False) 
+print('CICE.csv and OW.csv created...')
+
