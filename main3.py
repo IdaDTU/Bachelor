@@ -1,11 +1,8 @@
-from footprint_operator import normalize, upsample, create_img,calculate_sigmas, make_kernel
-import matplotlib.pyplot as plt
+from footprint_operator import resample, create_img,calculate_sigmas, make_kernel
 import pandas as pd
-import cv2
-from data_visualization import dtu_coolwarm_cmap
 from scipy.signal import fftconvolve
-from scipy import signal
 import numpy as np
+import imageio.v2 as imageio
 #%% -------------------------- Dictonaries -------------------------- # 
 
 # Define dictonary for CIMR IFOV (in km)
@@ -49,13 +46,11 @@ ice_df = pd.read_csv(SMRT_directory)
 OW_df = pd.read_csv(OW)
 df = pd.concat([OW_df, ice_df])
 
-# Find max and min
-tb_min = df['tb'].min()
-tb_max = df['tb'].max()
-
-# Normalize to acces tb values later
-normalized_df = normalize(df,tb_min,tb_max)
-print(f"Brightness temperature has been normalized using max: {tb_max} and min: {tb_min}... ")
+# Read variables
+lat = df['lat']
+lon = df['lon']
+tb = df['tb']
+print("Latitude, longitude and brightness temperatures loaded...")
 
 # Calculate sigmas
 sigma1, sigma2 = calculate_sigmas(cross_track, along_track)
@@ -63,30 +58,21 @@ print("Sigma1 and sigma2 calculated...")
 
 # Make Gaussian kernel
 kernel = make_kernel(sigma1, sigma2)
-kernel_norm = kernel / np.sum(kernel)
-print(f"Normalized Gaussian kernel created. Dim: {kernel_norm.shape}...")
+print(f"Gaussian kernel created. Dim: {kernel.shape}...")
 
 # Resample SMRT output from 4km to 1km regular grid using nearest interpolation
-upsampled_df = upsample(normalized_df,output_directory)
+grid_lon, grid_lat, grid_tb = resample(lat,lon,tb)
 print("Data resampled...")
 
-# Load features
-upsampled_lat = upsampled_df['lat'][:10]
-upsampled_lon = upsampled_df['lon'][:10]
-upsampled_tb = upsampled_df['tb'][:10]
-print("Variables loaded...")
+# Create image 
+img_rgb, img_gray = create_img(grid_lat, grid_lon, grid_tb, 'output.png')
+print(f"Image with dim: {img_rgb.shape} created and saved...")
 
-#%% Create image 
-img_gray, img_rbg = create_img(upsampled_lat, upsampled_lon, upsampled_tb, output_directory_img)
-print(f"Image with dim: {img_gray.shape} created and saved...")
-
-#%% Apply filter. 'same' is there to enforce the same output shape as input arrays
-convolved_tb = fftconvolve(img_gray, kernel_norm, mode='same')
+# Apply filter. 'same' is there to enforce the same output shape as input arrays
+convolved_tb = fftconvolve(img_rgb, kernel[:, :, np.newaxis], mode='same')
 
 # Save using colormap
-plt.imsave('convolved_tb.png', convolved_tb)
+imageio.imwrite("convolved_tb.png", convolved_tb.astype(np.float32))
 print("Gaussian kernel applied and image saved...")
 
-#%%
-print(img_gray.shape)
 
