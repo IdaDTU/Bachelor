@@ -160,3 +160,34 @@ def SMRT_compute_tbv(mediums, freq, theta):
         results.append(tbv)
 
     return pd.Series(results, name='tbv')
+
+def scale_brightness_temperature(tb_sim,concentration_ice, OW_tb):
+    """
+    Scales the brightness temperature based on sea ice concentration.
+
+    Parameters:
+    concentration_ice (float or array): Sea ice concentration (0 to 1)
+    tb (float or array): Brightness temperature
+
+    Returns:
+    float or array: Scaled brightness temperature
+    """
+    
+    tb_mix =(1 - concentration_ice)*OW_tb + concentration_ice * tb_sim
+
+    return tb_mix
+
+def set_OW_tb(OW_input_path, tiepoint):
+    # Load the data
+    df = pd.read_csv(OW_input_path)
+
+    # Add the tb column
+    df["tb"] = tiepoint
+
+    # Keep only TLAT, TLON, and tb
+    df = df[["tb","TLAT", "TLON"]]
+
+    # Rename TLAT and TLON
+    df = df.rename(columns={"TLAT": "lat", "TLON": "lon"})
+    df.to_csv(f'OW_{tiepoint}', index=False)
+    return df

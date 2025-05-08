@@ -1,5 +1,6 @@
 from physics import temperature_gradient_snow, calculate_snow_density
-from SMRT import SMRT_create_ice_columns, SMRT_create_snowpacks,SMRT_create_mediums, SMRT_compute_tbh,SMRT_compute_tbv
+from SMRT import SMRT_create_ice_columns, SMRT_create_snowpacks,SMRT_create_mediums, SMRT_compute_tbh,SMRT_compute_tbv, scale_brightness_temperature,set_OW_tb
+from dictionaries import OW_tiepoints
 import pandas as pd
 import numpy as np
 
@@ -16,14 +17,20 @@ frequency =  18.7e9 #(in Hz)
 # Desired batch index (starting from 1)
 batch = 1  # Change this to 1-10
 
+# OW tiepoint
+OW_tb = OW_tiepoints["36.5H"]
+
 # Choose type of ice to simulate
 ice_type = 'multiyear'
 
 # Choose polarization to compute
 polarization = 'h' # choose h or v
 
-# Insert directory for CICE data
-CICE_directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/csv/CICE'
+# Insert directory for CICE data for sea ice
+CICE_directory = 'C:/Users/user/OneDrive/Desktop/Bachelor/CSV/CICE/CICE'
+
+# Insert directory for OW data
+OW_directory ='C:/Users/user/OneDrive/Desktop/Bachelor/CSV/CICE/OW'
 
 # ---------------------------------------------------------------- # 
 
@@ -71,8 +78,7 @@ if batch == 1:
     start = 0
 else:
     start = cumulative_sizes[batch - 2]
-#end = cumulative_sizes[batch - 1]
-end = 10
+end = cumulative_sizes[batch - 1]
 print(f"Processing batch {batch}: start={start}, end={end}")
 
 # Slice inputs
@@ -85,6 +91,7 @@ denisty_profile_snow = denisty_profile_snow[start:end]
 latitude = latitude[start:end]
 longitude = longitude[start:end]  
 
+# Interval
 n = end - start 
 
 # Create ice columns and snowpacks
@@ -117,11 +124,23 @@ elif polarization == 'v':
 else:
     raise ValueError("Polarization must be either 'h' or 'v'.")
 
+# Linearly scale with SIC
+tb_scaled = scale_brightness_temperature(tb ,concentration_ice.iloc, OW_tb)
+print('Scaled brigtness temperature computed...')
+
 # Create output DataFrame
-tb_df = pd.DataFrame({'tb': tb,
+tb_df = pd.DataFrame({'tb': tb_scaled,
                       'lat': latitude.values,
                       'lon': longitude.values})
+print('Output dataframe created...')
 
+# Set OW tiepoint in droppped OW csv
+OW_df=set_OW_tb(OW_directory, OW_tb)
+print('Tiepoint value set for OW data created...')
 
-# Save result as CSV
+# Save result as CSVs
 tb_df.to_csv(f'C:/Users/user/OneDrive/Desktop/Bachelor/csv/SMRT_{incidence_angle}_{frequency}_{ice_type}_{polarization}_{batch}.csv',index=False)
+OW_df.to_csv(f'OW_{OW_tb}', index=False)
+print('CSV for simulated tb and OW saved...')
+
+

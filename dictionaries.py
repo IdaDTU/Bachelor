@@ -1,4 +1,20 @@
-
+# OW tiepoints
+OW_tiepoints = { "1.4V": None,
+                "1.4H": None,
+                "6.9V": 161.35,
+                "6.9H": 82.13,
+                "10.65V": 167.34,
+                "10.65H": 88.26,
+                "18.7V": 183.72,
+                "18.7H": 108.46,
+                "23.8V": 196.41,
+                "23.8H": 128.23,
+                "31.4V": None,
+                "31.4H": None,
+                "36.5V": 209.81,
+                "36.5H": 145.29,
+                "89V": 243.20,
+                "89H": 196.94}
 
 # Define dictonary for CIMR IFOV (in km)
 CIMR_tracks = {1.4: {"IFOV": {"along_track": 36, "cross_track": 64}},
@@ -8,8 +24,6 @@ CIMR_tracks = {1.4: {"IFOV": {"along_track": 36, "cross_track": 64}},
                36.5: {"IFOV": {"along_track": 3, "cross_track": 5}}}
 
 # Define dictonary for MWI IFOV (in km)
-
-
 
 
 # Define dictionary for CIMR max and min for FYI and MYI and sea ice tiepoint
@@ -36,3 +50,4 @@ CIMR = {"FYI": {"1.4H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {}},
                 "36.5V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {}}}}}
 
 # Define dictionary for MWI max and min for FYI and MYI and sea ice tiepoint
+
