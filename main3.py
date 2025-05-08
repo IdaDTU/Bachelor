@@ -36,15 +36,6 @@ lon = df['lon']
 tb = df['tb']
 print("Latitude, longitude and brightness temperatures loaded...")
 
-# Calculate sigmas
-sigma1, sigma2 = calculate_sigmas(cross_track, along_track)
-print("Sigma1 and sigma2 calculated...")
-
-# Make Gaussian kernel
-kernel = make_kernel(sigma1, sigma2)
-print(f"Gaussian kernel created. Dim: {kernel.shape}...")
-
-#%%
 # Resample SMRT output from 4km to 1km regular grid using nearest interpolation
 grid_lon, grid_lat, grid_tb = resample(lat,lon,tb)
 print("Data resampled...")
@@ -58,12 +49,23 @@ print(f"Maximum: {tb_max} and Minimum: {tb_min} computed...")
 img_rgb, img_gray = create_img(grid_lat, grid_lon, grid_tb, 'output.png')
 print(f"Image with dim: {img_rgb.shape} created and saved...")
 
+# Calculate sigmas
+sigma1, sigma2 = calculate_sigmas(cross_track, along_track)
+print("Sigma1 and sigma2 calculated...")
+
+# Make Gaussian kernel
+kernel = make_kernel(sigma1, sigma2)
+print(f"Gaussian kernel created. Dim: {kernel.shape}...")
+
 # Apply filter. 'same' is there to enforce the same output shape as input arrays
 convolved_tb = fftconvolve(img_rgb, kernel[:, :, np.newaxis], mode='same')
+print("Kernel applied to image...")
 
 # Normalize convolved_tb using grid_tb range
 normalized = (convolved_tb - tb_min) / (tb_max - tb_min)
 normalized = np.clip(normalized, 0, 1)  # ensure it's in [0, 1]
+print("Brightness temperature normalized...")
 
 # Save as RGB image
 plt.imsave('convolved_tb.png', normalized)
+print("Convolved image saved...")
