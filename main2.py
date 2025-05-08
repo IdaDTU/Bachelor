@@ -35,6 +35,8 @@ OW_directory ='C:/Users/user/OneDrive/Desktop/Bachelor/CSV/CICE/OW'
 # ---------------------------------------------------------------- # 
 
 #%% Read CICE csv
+
+#%% Read CICE csv
 CICE_csv = pd.read_csv(CICE_directory)
 
 # Extract and define relevant scalar variabels 
@@ -91,7 +93,6 @@ denisty_profile_snow = denisty_profile_snow[start:end]
 latitude = latitude[start:end]
 longitude = longitude[start:end]  
 
-# Interval
 n = end - start 
 
 # Create ice columns and snowpacks
@@ -134,13 +135,10 @@ tb_df = pd.DataFrame({'tb': tb_scaled,
                       'lon': longitude.values})
 print('Output dataframe created...')
 
-# Set OW tiepoint in droppped OW csv
-OW_df=set_OW_tb(OW_directory, OW_tb)
-print('Tiepoint value set for OW data created...')
-
 # Save result as CSVs
 tb_df.to_csv(f'C:/Users/user/OneDrive/Desktop/Bachelor/csv/SMRT_{incidence_angle}_{frequency}_{ice_type}_{polarization}_{batch}.csv',index=False)
-OW_df.to_csv(f'OW_{OW_tb}', index=False)
-print('CSV for simulated tb and OW saved...')
+print('CSV for simulated tb saved...')
 
-
+# Save result as CSV
+tb_df.to_csv(f'/zhome/da/d/187040/bachelor/csv/SMRT/SMRT_{incidence_angle}_{frequency}_{ice_type}_{polarization}_{batch}.csv',index=False)
+print('CSV saved...')
