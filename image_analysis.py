@@ -1,43 +1,27 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image
+from data_visualization import dtu_grey  # assuming you're not using dtu_coolwarm_cmap for plotting
 
-def grayscale_to_colored(img_gray, min_val, max_val, cmap='viridis'):
+
+from skimage.color import rgb2gray
+
+def compute_tb(image_path, tb_min, tb_max):
     """
-    De-normalizes a grayscale image and applies a colormap.
+    Compute brightness temperature from RGB image.
 
     Parameters:
-        img_gray : 2D numpy array (grayscale image, values normalized between 0 and 1 or unknown)
-        min_val  : original minimum value
-        max_val  : original maximum value
-        cmap     : string name of a matplotlib colormap or a colormap object
+    image_path (str): Path to the RGB image file
+    tb_min (float): Minimum brightness temperature (K)
+    tb_max (float): Maximum brightness temperature (K)
 
     Returns:
-        RGB image as a (H, W, 3) numpy array with dtype uint8
+    tb_map (np.ndarray): Brightness temperature map
+    rgb_array (np.ndarray): Original RGB array normalized to [0,1]
     """
-    # De-normalize
-    img_real = img_gray * (max_val - min_val) + min_val
+    rgb_img = Image.open(image_path).convert("RGB")
+    rgb_array = np.array(rgb_img).astype(np.float32) / 255.0
+    gray_intensity = rgb2gray(rgb_array)
+    tb_map = tb_min + gray_intensity * (tb_max - tb_min)
+    return tb_map
 
-    # Normalize to 0–1 for colormap application
-    img_normalized = (img_real - min_val) / (max_val - min_val)
-    img_normalized = np.clip(img_normalized, 0, 1)
-
-    # Apply colormap
-    colormap = plt.get_cmap(cmap)
-    img_colored = colormap(img_normalized)  # returns RGBA
-
-    # Drop alpha channel and convert to uint8
-    img_rgb = (img_colored[:, :, :3] * 255).astype(np.uint8)
-
-    return img_rgb
-
-
-
-def subtract_images(img1, img2):
-    """
-    Subtract img2 from img1. Both must be NumPy arrays of the same shape.
-    """
-    if img1.shape != img2.shape:
-        raise ValueError("Images must have the same shape to subtract.")
-
-    result = img1.astype(np.float32) - img2.astype(np.float32)
-    return result
