@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.signal import fftconvolve
 import numpy as np
 import matplotlib.pyplot as plt
-from dictionaries import CIMR_tracks
+from dictionaries import CIMR_tracks, MWI_tracks
 
 # -------------------------- User Input -------------------------- # 
 # What is the name of the file you want to create
@@ -50,7 +50,7 @@ img_rgb, img_gray = create_img(grid_lat, grid_lon, grid_tb, 'output.png')
 print(f"Image with dim: {img_rgb.shape} created and saved...")
 
 # Calculate sigmas
-sigma1, sigma2 = calculate_sigmas(cross_track, along_track)
+sigma1, sigma2 = cross_track,along_track
 print("Sigma1 and sigma2 calculated...")
 
 # Make Gaussian kernel
@@ -61,11 +61,7 @@ print(f"Gaussian kernel created. Dim: {kernel.shape}...")
 convolved_tb = fftconvolve(img_rgb, kernel[:, :, np.newaxis], mode='same')
 print("Kernel applied to image...")
 
-# Normalize convolved_tb using grid_tb range
-normalized = (convolved_tb - tb_min) / (tb_max - tb_min)
-normalized = np.clip(normalized, 0, 1)  # ensure it's in [0, 1]
-print("Brightness temperature normalized...")
-
 # Save as RGB image
-plt.imsave('convolved_tb.png', normalized)
+convolved_tb_uint8 = np.clip(convolved_tb, 0, 255).astype(np.uint8)
+plt.imsave('convolved_tb.png', convolved_tb_uint8)
 print("Convolved image saved...")
