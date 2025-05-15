@@ -4,8 +4,8 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap, Normalize,ListedColormap, BoundaryNorm
 import matplotlib
-
-
+from pyproj import Proj
+from scipy.interpolate import griddata
 matplotlib.rcParams['font.family'] = 'Arial'
 
 # DTU color scheme
@@ -33,55 +33,68 @@ dtu_coolwarm_cmap = LinearSegmentedColormap.from_list("dtu_coolwarm", dtu_coolwa
 dtu_blues_cmap = LinearSegmentedColormap.from_list("dtu_blues", dtu_blues)
 dtu_reds_cmap = LinearSegmentedColormap.from_list("dtu_reds", dtu_reds)
 
-
-import numpy as np
-import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-from matplotlib.colors import Normalize
-from pyproj import Proj
-
-
-# Conversion function for LAEA projection (optional, useful for checks/calculations)
+# LAEA projection helper
 def latlon_to_laea(lat, lon, lat_0=90, lon_0=0):
-    laea_proj = Proj(proj='laea', lat_0=lat_0, lon_0=lon_0, ellps='WGS84')
-    return laea_proj(lon, lat)
+    laea_proj = Proj(proj='laea', lat_0=lat_0, lon_0=lon_0)
+    return laea_proj(lon, lat)  # pyproj uses (lon, lat)
 
-# Main plotting function using pcolormesh
-def plot_laea_cmap(grid_lat, grid_lon, grid_tb,
-                         colorbar_min, colorbar_max,
-                         filename='plot_pcolormesh.pdf'):
 
+def plot_laea_cmap(lat, lon, cvalue, colorbar_min, colorbar_max, filename='plot.pdf'):
+    """
+    Plot scatter data on a North Polar Lambert Azimuthal Equal-Area map using a continuous DTU-style colormap.
+
+    Parameters:
+    lat: 1D array of latitudes
+    lon: 1D array of longitudes
+    cvalue: 1D array of values
+    tiepoint: value that defines the background (land) color
+    colorbar_min: minimum colorbar value
+    colorbar_max: maximum colorbar value
+    filename: output filename
+    """
     fig, ax = plt.subplots(figsize=(10, 10),
                            subplot_kw={'projection': ccrs.LambertAzimuthalEqualArea(central_latitude=90,
                                                                                     central_longitude=0)})
 
     ax.set_extent([-180, 180, 66.5, 90], crs=ccrs.PlateCarree())
-    ax.add_feature(cfeature.LAND, facecolor=dtu_grey)
-    ax.add_feature(cfeature.COASTLINE)
 
+    # Define color for land using tiepoint
+    norm = Normalize(vmin=colorbar_min, vmax=colorbar_max)
+    tiepoint_color = dtu_coolwarm_cmap(norm(250)) 
+
+    # Add land with tiepoint color
+    land = cfeature.NaturalEarthFeature('physical',
+                                        'land',
+                                        '50m',
+                                        edgecolor='face',
+                                        facecolor=tiepoint_color)
+    ax.add_feature(land)
+
+    # Gridlines
     gl = ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
     gl.xlabel_style = {'size': 16}
     gl.ylabel_style = {'size': 16}
 
-    norm = Normalize(vmin=colorbar_min, vmax=colorbar_max)
 
-    # Plot using pcolormesh
-    mesh = ax.pcolormesh(grid_lon, grid_lat, grid_tb,
-                         cmap=dtu_coolwarm_cmap,
-                         shading='auto',
-                         norm=norm,
-                         transform=ccrs.PlateCarree())
 
-    cbar = plt.colorbar(mesh, ax=ax, orientation='vertical', shrink=0.8, pad=0.09)
-    cbar.ax.tick_params(labelsize=16)
-    cbar.set_label('TbH [K]', fontsize=18, labelpad=15)
+    # Scatter plot
+    sc = ax.scatter(lon, lat,
+                c=cvalue,
+                cmap=dtu_coolwarm_cmap,
+                norm=norm,
+                s=0.01,
+                transform=ccrs.PlateCarree())
+
+
+    # Colorbar
+    cbar = plt.colorbar(sc, ax=ax, orientation='vertical', shrink=0.8, pad=0.09)
+    cbar.set_label('tb', fontsize=18, labelpad=15)
 
     plt.savefig(filename, dpi=300, bbox_inches='tight')
-    plt.show()
 
-# Example call (replace with your actual data):
-# plot_laea_pcolormesh(grid_lat, grid_lon, grid_tb, 200, 300)
+
+
+
 def plot_laea_categorical(lat, lon, cvalue, output_path):
     
     """
@@ -133,8 +146,6 @@ def plot_laea_categorical(lat, lon, cvalue, output_path):
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.show()
-
-
 
 
 def plot_regular(lat, lon, cvalue):
