@@ -137,6 +137,33 @@ def snow_depth(tb7v, tb19v, sic, icetype):
     return sd #in cm
 
 
+# ----------- Snow/ice Interface Temperature --------------------
+# https://ieeexplore.ieee.org/document/4510757
+
+def compute_interface_temperature(TB_6V, Ti, SIC):
+    """
+    Compute ice temperature using the AMSR-E algorithm. Use nearly 100% ice
+
+    Parameters:
+    - TB_6V: Brightness temperature at 6 GHz vertical polarization (float or array)
+    - SIC: Ice concentration (0 to 1, float or array)
+
+    Returns:
+    - T_i: Estimated ice temperature in Kelvin
+    """
+
+    T_w = 271.35
+    eps6V = TB_6V / Ti    #exprected to bea round 0.95
+    T_p = TB_6V / eps6V
+
+    T_si = (T_p - T_w * (1 - SIC)) / SIC
+
+    return T_si
+
+
+
+
+
 
 
 
