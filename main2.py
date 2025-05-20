@@ -34,9 +34,7 @@ OW_directory ='C:/Users/user/OneDrive/Desktop/Bachelor/CSV/CICE/OW'
 
 # ---------------------------------------------------------------- # 
 
-#%% Read CICE csv
-
-#%% Read CICE csv
+# Read CICE csv
 CICE_csv = pd.read_csv(CICE_directory)
 
 # Extract and define relevant scalar variabels 
