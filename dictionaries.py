@@ -27,15 +27,14 @@ CIMR_tracks = {1.4: {"IFOV": {"along_track": 36, "cross_track": 64}},
 
 
 # Define dictionary for CIMR max and min for FYI and MYI and sea ice tiepoint
-CIMR = {"FYI": {"6.9H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {}},
-                "10.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {}},
-                "18.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {}},
-                "36.5H": {"statistic": {"max": 0, "min": 0},"tiepoint": {}},
-                "1.4V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {}},
-                "6.9V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {}},
-                "10.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {}},
-                "18.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {}},
-                "36.5V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {}},
+CIMR = {"FYI": {"6.9H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {221.52}},
+                "10.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {220.35}},
+                "18.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {218.92}},
+                "36.5H": {"statistic": {"max": 0, "min": 0},"tiepoint": {193.08}},
+                "6.9V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {254.89}},
+                "10.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {253.26}},
+                "18.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {249.73}},
+                "36.5V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {216.05}},
         
         "MYI": {"6.9H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {227.08}},
                 "10.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {226.29}},
