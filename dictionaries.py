@@ -27,41 +27,43 @@ CIMR_tracks = {1.4: {"IFOV": {"along_track": 36, "cross_track": 64}},
 
 
 # Define dictionary for CIMR max and min for FYI and MYI and sea ice tiepoint
-CIMR = {"FYI": {"6.9H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {220.54}},
-                "10.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {220.87}},
-                "18.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {220.26}},
-                "36.5H": {"statistic": {"max": 0, "min": 0},"tiepoint": {200.71}},
-                "6.9V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {257.10}},
-                "10.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {257.02}},
-                "18.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {254.55}},
-                "36.5V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {227.02}},
-        
-        "MYI": {"6.9H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {224.86}},
-                "10.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {224.92}},
-                "18.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {221.90}},
-                "36.5H": {"statistic": {"max": 0, "min": 0}, "tiepoint": {187.62}},
-                "6.9V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {257.19}},
-                "10.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {256.78}},
-                "18.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {251.72}},
-                "36.5V": {"statistic": {"max": 0, "min": 0}, "tiepoint": {209.00}}}}}
+CIMR = {"FYI": {
+        "6.9H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 220.54},
+        "10.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 220.87},
+        "18.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 220.26},
+        "36.5H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 200.71},
+        "6.9V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 257.10},
+        "10.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 257.02},
+        "18.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 254.55},
+        "36.5V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 227.02}},
+    "MYI": {
+        "6.9H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 224.86},
+        "10.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 224.92},
+        "18.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 221.90},
+        "36.5H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 187.62},
+        "6.9V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 257.19},
+        "10.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 256.78},
+        "18.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 251.72},
+        "36.5V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 209.00}}}
 
 # Define dictionary for MWI max and min for FYI and MYI and sea ice tiepoint
-MWI = { "FYI": {"18.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 222.44},
-                "23.8H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 219.78},
-                "31.4H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 210.97},
-                "89H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 174.65},
-                "18.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 254.29},
-                "23.8V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 249.85},
-                "31.4V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 237.80},
-                "89V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 190.80}},
-       
-       "MYI": {"18.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 223.99},
-               "23.8H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 217.64},
-               "31.4H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 201.58},
-               "89H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 179.27},
-               "18.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 251.60},
-               "23.8V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 243.37},
-               "31.4V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 223.81},
-               "89V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 194.98}}}
+MWI = {"FYI": {
+        "18.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 222.44},
+        "23.8H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 219.78},
+        "31.4H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 210.97},
+        "89H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 174.65},
+        "18.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 254.29},
+        "23.8V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 249.85},
+        "31.4V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 237.80},
+        "89V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 190.80}},
+    "MYI": {
+        "18.7H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 223.99},
+        "23.8H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 217.64},
+        "31.4H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 201.58},
+        "89H": {"statistic": {"max": 0, "min": 0}, "tiepoint": 179.27},
+        "18.7V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 251.60},
+        "23.8V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 243.37},
+        "31.4V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 223.81},
+        "89V": {"statistic": {"max": 0, "min": 0}, "tiepoint": 194.98}}}
 
 
