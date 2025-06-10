@@ -7,16 +7,11 @@ import cv2
 from data_visualization import dtu_coolwarm_cmap,dtu_grey
 from pyproj import CRS, Transformer
 from matplotlib.colors import LinearSegmentedColormap, Normalize,ListedColormap, BoundaryNorm
-
-
-def calculate_sigmas(cross_track,along_track):
-     sigma_along = along_track/2.355
-     sigma_cross = cross_track/2.355
-     return sigma_along,sigma_cross
+import xarray as xr
 
 def make_kernel(sigma1, sigma2):
     # t is just x axis?
-    t = np.linspace(-75, 75, 150)
+    t = np.linspace(-50, 50, 100)
     
     # Make two normal distribution for sigma1 and sigma2, meaning 2 1D kernels
     pdf1 = (1.0 / np.sqrt(2 * np.pi * sigma1**2)) * np.exp(-t**2 / (2 * sigma1**2))
@@ -116,4 +111,14 @@ def create_img(grid_lat, grid_lon, grid_tb, output_path):
     img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
 
     return img_rgb, img_gray
+
+def save_tb_to_netcdf(grid_tb, grid_lat, grid_lon, output_path):
+	# Save to NetCDF
+    ds = xr.Dataset(data_vars={"tb": (("y", "x"), grid_tb)},
+        coords={"lat": (("y", "x"), grid_lat),
+				"lon": (("y", "x"), grid_lon)},
+        attrs={"title": "Synthetic Brightness Temperature Map",
+				"units": "Kelvin",
+				"projection": "Lambert Azimuthal Equal Area"})
+    ds.to_netcdf(output_path)
 

@@ -6,6 +6,7 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize,ListedColormap,
 import matplotlib
 from pyproj import Proj
 from scipy.interpolate import griddata
+
 matplotlib.rcParams['font.family'] = 'Arial'
 
 # DTU color scheme
@@ -25,8 +26,8 @@ phase3_red = '#e6c1c1'
 
 # Color lists for colormaps
 dtu_coolwarm = [dtu_navy, white, dtu_red]
-dtu_blues = [dtu_navy, white]
-dtu_reds = [dtu_red, white]
+dtu_blues = ['#030f4f',white]
+dtu_reds = [white,dtu_red]
 
 # Custom colormaps
 dtu_coolwarm_cmap = LinearSegmentedColormap.from_list("dtu_coolwarm", dtu_coolwarm)

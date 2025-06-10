@@ -1,6 +1,6 @@
 # Imports
 from data_preparation import combine_nc_files, create_combined_dataframe, remove_nonphysical
-
+import os
 # -------------------------- User Input -------------------------- # 
 
 # Create ice layers and snow layers
@@ -25,6 +25,21 @@ print('combined_nc created...')
 # Create subset of dataset
 ds_subset = combined_nc.isel(time=t)
 print('subset created...')
+
+# Assign TLON and TLAT as coordinates
+lat = ds_subset["TLAT"]
+lon = ds_subset["TLON"]
+
+# Save aice with TLAT/TLON
+aice_ds = ds_subset[["aice"]]
+aice_ds = aice_ds.assign_coords(TLAT=lat, TLON=lon)
+aice_ds.to_netcdf(os.path.join(output_directory_CICE, "CICE_SIC.nc"))
+
+# Save hs with TLAT/TLON
+hs_ds = ds_subset[["hs"]]
+hs_ds = hs_ds.assign_coords(TLAT=lat, TLON=lon)
+hs_ds.to_netcdf(os.path.join(output_directory_CICE, "CICE_hs.nc"))
+
 
 # Create dataframes
 input_df =  create_combined_dataframe(ds_subset, layers_ice)

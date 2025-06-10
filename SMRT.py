@@ -16,7 +16,7 @@ def SMRT_create_ice_columns(thickness_ice,
         thickness = np.array([thickness_ice.iloc[i] / l] * l)
         
         # Define the correlation length for each layer.
-        p_ex = np.array([1.0e-3] * l)
+        p_ex = np.array([0.000225] * l)
         
         # Extract the temperature profile (a gradient) for the current iteration.
         temperature = temperature_profile_ice.iloc[i]
@@ -47,23 +47,26 @@ def SMRT_create_ice_columns(thickness_ice,
 def SMRT_create_snowpacks(thickness_snow,
                           temperature_profile_snow,
                           density_profile_snow,
+                          salinity_profile_snow,
                           n,
                           layers_snow):
     snowpacks = []
     for i in range(n):    
         l_s = layers_snow
-        thickness_s = np.linspace(0, thickness_snow.iloc[i], l_s)
-        p_ex_s = np.linspace(0.00005, 0.0003, l_s) 
+        #thickness_s = np.linspace(0, thickness_snow.iloc[i], l_s)
+        thickness_s = np.array([thickness_snow.iloc[i] / l_s] * l_s)
+
+        p_ex_s = np.linspace(0.000055, 0.00039, l_s) 
         temperature_s = temperature_profile_snow.iloc[i]
         density_s = density_profile_snow.iloc[i]
-        stickiness = 0.2
+        salinity = salinity_profile_snow.iloc[i]
         
         snowpack = make_snowpack(thickness=thickness_s,
                                  microstructure_model="exponential",
                                  density=density_s,
-                                 stickiness=stickiness,
                                  temperature=temperature_s,
-                                 corr_length=p_ex_s)
+                                 corr_length=p_ex_s,
+                                 salinity = salinity)
     
         snowpacks.append(snowpack)
     return snowpacks
@@ -125,7 +128,7 @@ def SMRT_compute_tbh(mediums, freq, theta):
         
         sensor = sensor_list.passive(freq, theta)
         n_max_stream = 64
-        m = make_model("iba", "dort", rtsolver_options={"n_max_stream": n_max_stream, "phase_normalization": "forced"})
+        m = make_model("iba", "dort", rtsolver_options={"n_max_stream": n_max_stream})
         res = m.run(sensor, medium)
         
         tbh = res.TbH()
@@ -153,7 +156,7 @@ def SMRT_compute_tbv(mediums, freq, theta):
         
         sensor = sensor_list.passive(freq, theta)
         n_max_stream = 64
-        m = make_model("iba", "dort", rtsolver_options={"n_max_stream": n_max_stream, "phase_normalization": "forced"})
+        m = make_model("iba", "dort", rtsolver_options={"n_max_stream": n_max_stream})
         res = m.run(sensor, medium)
         
         tbv = res.TbV()
@@ -161,19 +164,23 @@ def SMRT_compute_tbv(mediums, freq, theta):
 
     return pd.Series(results, name='tbv')
 
-def scale_brightness_temperature(tb_sim,concentration_ice, OW_tb):
+
+def scale_brightness_temperature(tb_sim, concentration_ice, OW_tb):
     """
     Scales the brightness temperature based on sea ice concentration.
 
     Parameters:
+    tb_sim (float or array): Simulated brightness temperature
     concentration_ice (float or array): Sea ice concentration (0 to 1)
-    tb (float or array): Brightness temperature
+    OW_tb (float or array): Open water brightness temperature
 
     Returns:
     float or array: Scaled brightness temperature
     """
-    
-    tb_mix =(1 - concentration_ice)*OW_tb + concentration_ice * tb_sim
+    # Convert to numeric array for safe arithmetic operations
+    concentration_ice = np.asarray(concentration_ice, dtype=float)
+
+    tb_mix = (1 - concentration_ice) * OW_tb + concentration_ice * tb_sim
 
     return tb_mix
 
