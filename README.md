@@ -53,8 +53,8 @@ Full reference list is available in the accompanying thesis PDF.
 - Josephine Juul
 
 Supervised by:  
-- **Dr. Rasmus Tonboe** (DMI)  
-- **Dr. Till Rasmussen** (DTU Space)
+- **Dr. Rasmus Tonboe** (DTU Space)  
+- **Dr. Till Rasmussen** (DMI)
 
 ## 🌍 Relevance  
 This project supports the development of next-generation Earth observation missions for Arctic sea ice monitoring. It highlights the importance of high-resolution radiometry and physically consistent retrieval methods for accurate climate assessment.
